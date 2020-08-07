@@ -1,0 +1,10 @@
+# (pdfLa)TeX
+*.aux
+*.lof
+*.log
+*.lot
+*.fls
+*.out
+*.toc
+*.fmt
+*.pdf

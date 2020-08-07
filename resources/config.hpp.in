@@ -1,0 +1,7 @@
+#pragma once
+
+namespace appconf {
+    constexpr char const name[] = u8"@PROJECT_NAME@";
+    constexpr char const version[] = u8"@PROJECT_VERSION@";
+    constexpr char const fullname[] = u8R"(@PROJECT_NAME@ @PROJECT_VERSION@)";
+}

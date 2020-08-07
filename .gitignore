@@ -30,3 +30,13 @@
 *.exe
 *.out
 *.app
+
+# Build folder is not tracked.
+build/*
+
+# Misc
+compile_commands.json
+*~
+\#*\#
+.\#*
+
