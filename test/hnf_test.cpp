@@ -7,7 +7,7 @@
 template<class Derived>
 bool is_rowHNF(const Eigen::MatrixBase<Derived> &mat) noexcept
 {
-    for(std::size_t i = 0, j = 0; j < mat.cols(); ++j) {
+    for(std::size_t i = 0, j = 0; j < mat.cols() && i < mat.rows(); ++j) {
         for(std::size_t k = i+1; k < mat.rows(); ++k)
             if (mat(k,j) != 0)
                 return false;
@@ -20,6 +20,12 @@ bool is_rowHNF(const Eigen::MatrixBase<Derived> &mat) noexcept
     }
 
     return true;
+}
+
+template<class Derived>
+bool is_colHNF(const Eigen::MatrixBase<Derived> &mat) noexcept
+{
+    return is_rowHNF(mat.transpose().eval());
 }
 
 template<class Derived>
@@ -40,15 +46,7 @@ int main(int argc, char*argv[])
         auto u = Eigen::Matrix<std::int64_t,3,3>::Identity().eval();
         khover::hnf_LLL<typename khover::rowops>(mat,std::tie(u),std::tuple<>{});
 
-        Eigen::Matrix<std::int64_t, 3,4> shouldbeM;
-        shouldbeM <<
-            1, 2, 3, 4,
-            0, 4, 8, 12,
-            0, 0, 0, 0;
-
-        if (mat != shouldbeM
-            || u*mat != mat0
-            || !is_unimodular(u))
+        if (!is_rowHNF(mat) || u*mat != mat0 || !is_unimodular(u))
         {
             std::cout << "mat=" << std::endl;
             std::cout << mat << std::endl;
@@ -68,21 +66,12 @@ int main(int argc, char*argv[])
             1, 1, 2, 3,
             5, 8, 13, 21;
         auto mat = mat0;
-        Eigen::Matrix<std::int64_t,5,5> u = decltype(u)::Identity();
-        Eigen::Matrix<std::int64_t,5,5> v = decltype(v)::Identity();
-        khover::hnf_LLL<typename khover::rowops>(mat,std::tie(u),std::tie(v));
+        Eigen::Matrix<std::int64_t,4,4> u = decltype(u)::Identity();
+        Eigen::Matrix<std::int64_t,4,4> v = decltype(v)::Identity();
+        khover::hnf_LLL<typename khover::colops>(mat,std::tie(u),std::tie(v));
 
-        Eigen::Matrix<std::int64_t, 5,4> shouldbeM;
-        shouldbeM <<
-            1, 0, 0, 0,
-            0, 1, 0, 0,
-            0, 0, 1, 0,
-            0, 0, 0, 1,
-            0, 0, 0, 0;
-
-        if (mat != shouldbeM
-            || u*mat != mat0
-            || u*v != Eigen::Matrix<std::int64_t,5,5>::Identity())
+        if (!is_colHNF(mat) || mat*u != mat0
+            || v*u != Eigen::Matrix<std::int64_t,4,4>::Identity())
         {
             std::cout << "mat=" << std::endl;
             std::cout << mat << std::endl;

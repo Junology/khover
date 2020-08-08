@@ -51,7 +51,7 @@ namespace khover {
  * \param m The target matrix to be transformed into its Hermite normal form.
  * \param us A tuple of matrices subject to the adjoint transformation.
  * \param vs A tuple of matrices subject to the transformation.
- * \return Always true; (in future) it will be the flag if overflow happened.
+ * \return true if transformation is performed.
  */
 template<
     class Ops,
@@ -71,10 +71,10 @@ bool hnf_LLL(
         std::conjunction<typename khover::is_pubbase_of_template<Eigen::MatrixBase,VTs>...>::value,
         "Matices V contain a class not derived from Eigen::MatrixBase");
     static_assert(
-        std::conjunction<std::bool_constant<UTs::Flags & Eigen::LvalueBit>...>::value,
+        std::conjunction<std::bool_constant<(UTs::Flags & Eigen::LvalueBit) != 0>...>::value,
         "Matrices U contain read-only variables");
     static_assert(
-        std::conjunction<std::bool_constant<VTs::Flags & Eigen::LvalueBit>...>::value,
+        std::conjunction<std::bool_constant<(VTs::Flags & Eigen::LvalueBit) != 0>...>::value,
         "Matrices V contain read-only variables");
 
     std::size_t nvecs = Ops::dual_t::size(m);

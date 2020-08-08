@@ -202,7 +202,7 @@ bool reduce(
 
     // Compute the scalar factor
     if (l1 < Ops::size(m)) {
-        q = - floor_div(m(k,l1), m(i,l1));
+        q = - floor_div(Ops::at(m,k)[l1], Ops::at(m,i)[l1]);
     }
     else if (2.0*std::abs(lambda(k,i)) > lambda(i,i))
         q = - std::round( lambda(k,i)/ lambda(i,i) );

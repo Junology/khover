@@ -20,6 +20,14 @@ struct rowops {
 
     template<class Derived>
     static inline
+    auto at(Eigen::MatrixBase<Derived> &mat, std::size_t i)
+        noexcept
+    {
+        return mat.row(i);
+    }
+
+    template<class Derived>
+    static inline
     void swap(Eigen::MatrixBase<Derived> &mat, std::size_t i1, std::size_t i2)
         noexcept
     {
@@ -80,6 +88,14 @@ struct colops {
         noexcept
     {
         return static_cast<std::size_t>(mat.rows());
+    }
+
+    template<class Derived>
+    static inline
+    auto at(Eigen::MatrixBase<Derived> &mat, std::size_t i)
+        noexcept
+    {
+        return mat.col(i);
     }
 
     template<class Derived>
