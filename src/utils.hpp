@@ -10,6 +10,7 @@
 
 #include <type_traits>
 #include <utility>
+#include <numeric>
 #include <cstdlib>
 
 namespace khover{
@@ -40,7 +41,7 @@ struct is_pubbase_of_template : public is_pubbase_of_template_impl<TBase,Derived
  **********************************/
 //! Traverse tuples
 template <class Tuple, class FuncT, class C=std::integral_constant<std::size_t, 0>>
-void for_each_tuple(Tuple &t, FuncT f, C = {}) {
+constexpr void for_each_tuple(Tuple &t, FuncT f, C = {}) {
     if constexpr(C::value < std::tuple_size<Tuple>::value) {
         f(std::get<C::value>(t));
         for_each_tuple(t, f, std::integral_constant<std::size_t,C::value+1>{});
@@ -48,12 +49,29 @@ void for_each_tuple(Tuple &t, FuncT f, C = {}) {
 }
 
 template <class Tuple, class FuncT, class C=std::integral_constant<std::size_t, 0>>
-void for_each_tuple(Tuple &&t, FuncT f, C dummy= {}) {
-    for_each_tuple(t, std::forward<FuncT>(f), dummy);
+constexpr void for_each_tuple(Tuple &&t, FuncT f, C dummy= {}) {
+    for_each_tuple(t, f, dummy);
     // if constexpr(C::value < std::tuple_size<Tuple>::value) {
     //     f(std::get<C::value>(t));
     //     for_each_tuple(t, f, std::integral_constant<std::size_t,C::value+1>{});
     // }
+}
+
+//! Fold a tuple with a binary operator.
+template <
+    class T, class Tuple, class BinOp,
+    class C=std::integral_constant<std::size_t,0>
+    >
+constexpr T foldl_tuple(T head, const Tuple &t, BinOp b, C = {})
+{
+    if constexpr(C::value < std::tuple_size<Tuple>::value) {
+        return foldl_tuple(
+            b(head, std::get<C::value>(t)), t, b,
+            std::integral_constant<std::size_t,C::value+1>{});
+    }
+    else {
+        return head;
+    }
 }
 
 //! Integral division with "truncated toward -infinity."

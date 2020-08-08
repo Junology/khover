@@ -16,10 +16,10 @@
 #include "utils.hpp"
 #include "hnf_impl_lll.hpp"
 
-//* For debug
+/* For debug
 #include <iostream>
 
-#define DBG_MSG std::cerr << __FILE__ << ":" << __LINE__ << std::endl
+#define DBG_MSG(x) std::cerr << __FILE__ << ":" << __LINE__ << std::endl << x << std::endl
 // */
 
 namespace khover {
@@ -78,6 +78,16 @@ bool hnf_LLL(
         "Matrices V contain read-only variables");
 
     std::size_t nvecs = Ops::dual_t::size(m);
+
+    if (!foldl_tuple(true, us, [nvecs](bool b, auto& u) { return b && Ops::size(u) == nvecs; })) {
+        DBG_MSG("Matricies U with invalid sizes.");
+        return false;
+    }
+
+    if (!foldl_tuple(true, vs, [nvecs](bool b, auto& v) { return b && Ops::dual_t::size(v) == nvecs; })) {
+        DBG_MSG("Matricies V with invalid sizes.");
+        return false;
+    }
 
     // If the given matrix consists of a single row vector, then all we have to do is to ensure the first non-zero entry is positive.
     if (nvecs == 1) {

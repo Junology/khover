@@ -36,6 +36,30 @@ bool is_unimodular(const Eigen::MatrixBase<Derived> &mat) noexcept
 
 int main(int argc, char*argv[])
 {
+    std::cout << "==========" << std::endl;
+    std::cout << "Invalid size matrices should be rejected." << std::endl;
+    std::cout << "==========" << std::endl;
+    {
+        using namespace khover;
+
+        Eigen::Matrix<int,6,4> mat, a, b;
+        Eigen::Matrix<int,4,6> c, d;
+
+        bool fst = hnf_LLL<rowops>(mat,std::tie(b,c,d),std::tie(a,b));
+        bool snd = hnf_LLL<rowops>(mat,std::tie(c,d),std::tie(a,b,c));
+        bool trd = hnf_LLL<colops>(mat,std::tie(b,c,d),std::tie(a,b));
+        bool fth = hnf_LLL<colops>(mat,std::tie(c,d),std::tie(a,b,c));
+
+        if(fst || snd || trd || fth)
+        {
+            std::cout << "Failed to detect wrong size matrices" << std::endl;
+            return -1;
+        }
+    }
+
+    std::cout << "==========" << std::endl;
+    std::cout << "Row HNF" << std::endl;
+    std::cout << "==========" << std::endl;
     {
         Eigen::Matrix<std::int64_t, 3,4> mat0;
         mat0 <<
@@ -57,6 +81,9 @@ int main(int argc, char*argv[])
         }
     }
 
+    std::cout << "==========" << std::endl;
+    std::cout << "Column HNF" << std::endl;
+    std::cout << "==========" << std::endl;
     {
         Eigen::Matrix<std::int64_t, 5,4> mat0;
         mat0 <<
