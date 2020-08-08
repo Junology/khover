@@ -16,7 +16,14 @@ macro(khover_test name srcs)
 endmacro(khover_test)
 
 khover_test(
+  matrixops_test
+  ""
+  Eigen3::Eigen
+  )
+
+khover_test(
   hnf_test
   ""
   Eigen3::Eigen
   )
+
