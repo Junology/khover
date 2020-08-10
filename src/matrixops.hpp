@@ -20,7 +20,7 @@ struct rowops {
 
     template<class Derived>
     static inline
-    auto at(Eigen::MatrixBase<Derived> &mat, std::size_t i)
+    decltype(auto) at(Eigen::MatrixBase<Derived> &mat, std::size_t i)
         noexcept
     {
         return mat.row(i);
@@ -92,7 +92,7 @@ struct colops {
 
     template<class Derived>
     static inline
-    auto at(Eigen::MatrixBase<Derived> &mat, std::size_t i)
+    decltype(auto) at(Eigen::MatrixBase<Derived> &mat, std::size_t i)
         noexcept
     {
         return mat.col(i);

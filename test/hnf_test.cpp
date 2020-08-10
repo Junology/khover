@@ -44,11 +44,12 @@ int main(int argc, char*argv[])
 
         Eigen::Matrix<int,6,4> mat, a, b;
         Eigen::Matrix<int,4,6> c, d;
+        Eigen::Matrix<int,3,3> e;
 
-        bool fst = hnf_LLL<rowops>(mat,std::tie(b,c,d),std::tie(a,b));
-        bool snd = hnf_LLL<rowops>(mat,std::tie(c,d),std::tie(a,b,c));
-        bool trd = hnf_LLL<colops>(mat,std::tie(b,c,d),std::tie(a,b));
-        bool fth = hnf_LLL<colops>(mat,std::tie(c,d),std::tie(a,b,c));
+        auto fst = hnf_LLL<rowops>(mat,std::tie(b,c,d),std::tie(a,b));
+        auto snd = hnf_LLL<rowops>(mat,std::tie(c,d),std::tie(a,b,c));
+        auto trd = hnf_LLL<colops>(mat,std::tie(c,d,e),std::tie(a,b));
+        auto fth = hnf_LLL<colops>(mat,std::tie(c,d),std::tie(e,a,b));
 
         if(fst || snd || trd || fth)
         {
@@ -68,15 +69,16 @@ int main(int argc, char*argv[])
             9, 10, 11, 12;
         auto mat = mat0;
         auto u = Eigen::Matrix<std::int64_t,3,3>::Identity().eval();
-        khover::hnf_LLL<typename khover::rowops>(mat,std::tie(u),std::tuple<>{});
+        auto rk = khover::hnf_LLL<typename khover::rowops>(mat,std::tie(u),std::tuple<>{});
 
-        if (!is_rowHNF(mat) || u*mat != mat0 || !is_unimodular(u))
+        if (!is_rowHNF(mat) || u*mat != mat0 || !is_unimodular(u) || !rk || *rk!=2)
         {
             std::cout << "mat=" << std::endl;
             std::cout << mat << std::endl;
             std::cout << std::endl;
             std::cout << "u=" << std::endl;
             std::cout << u << std::endl;
+            std::cout << "rk=" << (rk ? *rk : -1) << std::endl;
             return -1;
         }
     }
@@ -95,16 +97,18 @@ int main(int argc, char*argv[])
         auto mat = mat0;
         Eigen::Matrix<std::int64_t,4,4> u = decltype(u)::Identity();
         Eigen::Matrix<std::int64_t,4,4> v = decltype(v)::Identity();
-        khover::hnf_LLL<typename khover::colops>(mat,std::tie(u),std::tie(v));
+        auto rk = khover::hnf_LLL<typename khover::colops>(mat,std::tie(u),std::tie(v));
 
         if (!is_colHNF(mat) || mat*u != mat0
-            || v*u != Eigen::Matrix<std::int64_t,4,4>::Identity())
+            || v*u != Eigen::Matrix<std::int64_t,4,4>::Identity()
+            || !rk || *rk != 4)
         {
             std::cout << "mat=" << std::endl;
             std::cout << mat << std::endl;
             std::cout << std::endl;
             std::cout << "u=" << std::endl;
             std::cout << u << std::endl;
+            std::cout << "rk=" << (rk ? *rk : -1) << std::endl;
             return -1;
         }
     }

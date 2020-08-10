@@ -171,19 +171,37 @@ void negate(
     lambda.negate(k);
 }
 
+//! The type of the return value of "Reduce2" step.
+enum HowSwap : uint_fast8_t {
+    ShouldSwap  = 0b001,
+    ZeroReducer = 0b010,
+    // < 8bits
+};
+
+// inline constexpr HowSwap operator|(HowSwap x, HowSwap y) noexcept
+// {
+//     return static_cast<HowSwap>(static_cast<std::underlying_type_t<HowSwap>>(x) | static_cast<std::underlying_type_t<HowSwap>>(y));
+// }
+
+// inline constexpr HowSwap operator&(HowSwap x, HowSwap y) noexcept
+// {
+//     return static_cast<HowSwap>(static_cast<std::underlying_type_t<HowSwap>>(x) & static_cast<std::underlying_type_t<HowSwap>>(y));
+// }
+
 /*!
  * "Reduce2" operation in the algorithm.
  * \pre i < k
- * \return flag || (whether "Swap" should be performed or not).
+ * \tparam flag If true, swap check will be skipped.
+ * \return Whether "Swap" should be performed or not.
  */
-template <class Ops, class Derived, class...Us, class...Vs>
-bool reduce(
+template <class Ops, bool flag, class Derived, class...Us, class...Vs>
+auto reduce(
     std::size_t i, std::size_t k,
     Eigen::MatrixBase<Derived> &m,
     std::tuple<Us&...> &us, std::tuple<Vs&...> &vs,
-    Lambda_t &lambda,
-    bool flag
+    Lambda_t &lambda
     ) noexcept
+    -> std::underlying_type_t<HowSwap>
 {
     /* Find the first non-zero entry of the i-th and j-th vectors. */
     std::size_t l1 = Ops::find_nonzero(
@@ -219,8 +237,18 @@ bool reduce(
         lambda.axpy(q, i, k);
     }
 
-    return flag || (l1 < Ops::size(m) && l1 <= l2)
-                || (l1 == Ops::size(m) && l1 == l2 && lambda.should_swap(k));
+    if constexpr(!flag) {
+        if (l1 < Ops::size(m))
+            return l1 <= l2 ? HowSwap::ShouldSwap : 0;
+        else if (l2 < Ops::size(m))
+            return HowSwap::ZeroReducer;
+        else
+            return HowSwap::ZeroReducer
+                | (l2 == Ops::size(m) && lambda.should_swap(k)
+                   ? HowSwap::ShouldSwap : 0);
+    }
+    else
+        return 0;
 }
 
 

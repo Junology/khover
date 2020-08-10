@@ -51,14 +51,14 @@ namespace khover {
  * \param m The target matrix to be transformed into its Hermite normal form.
  * \param us A tuple of matrices subject to the adjoint transformation.
  * \param vs A tuple of matrices subject to the transformation.
- * \return true if transformation is performed.
+ * \return If success, the rank of the given matrix over Q (the field of rationals).
  */
 template<
     class Ops,
     class MT,int MR, int MC, int MOpt, int MRMax, int MCMax,
     class...UTs, class...VTs
     >
-bool hnf_LLL(
+std::optional<std::size_t> hnf_LLL(
     Eigen::Matrix<MT,MR,MC,MOpt,MRMax,MCMax> &m,
     std::tuple<UTs&...> us,
     std::tuple<VTs&...> vs
@@ -79,50 +79,66 @@ bool hnf_LLL(
 
     std::size_t nvecs = Ops::dual_t::size(m);
 
-    if (!foldl_tuple(true, us, [nvecs](bool b, auto& u) { return b && Ops::size(u) == nvecs; })) {
+    if (!foldl_tuple(true, us, [nvecs](bool b, auto& u) { return b && Ops::size(u) >= nvecs; })) {
         DBG_MSG("Matricies U with invalid sizes.");
-        return false;
+        return std::nullopt;
     }
 
-    if (!foldl_tuple(true, vs, [nvecs](bool b, auto& v) { return b && Ops::dual_t::size(v) == nvecs; })) {
+    if (!foldl_tuple(true, vs, [nvecs](bool b, auto& v) { return b && Ops::dual_t::size(v) >= nvecs; })) {
         DBG_MSG("Matricies V with invalid sizes.");
-        return false;
+        return std::nullopt;
     }
 
-    // If the given matrix consists of a single row vector, then all we have to do is to ensure the first non-zero entry is positive.
+    // Do nothing on empty matrices
+    if (nvecs == 0 || Ops::size(m) == 0) {
+        return std::make_optional(0);
+    }
+
+    // If the given matrix consists of a single row vector, then all we have to do is to check if the first non-zero entry is positive.
     if (nvecs == 1) {
-        Ops::find_nonzero(
+        std::size_t l = Ops::find_nonzero(
             m, 0,
-            [&](std::size_t l, auto x) {
+            [&m,&us,&vs](std::size_t l, auto x) {
                 if (std::signbit(x)) {
                     Ops::scalar(m,0,-1);
                     for_each_tuple(us, [](auto& u){ Ops::dual_t::scalar(u,0,-1); });
                     for_each_tuple(vs, [](auto& v){ Ops::scalar(v,0,-1); });
                 }
             });
-        return true;
+        return std::make_optional(l < Ops::dual_t::size(m) ? 1 : 0);
     }
 
     _impl_LLL::Lambda_t lambda(nvecs+1);
 
-    // The index of the row that we currently focus on.
-    // Note that the row indices may be upside-down.
-    size_t cur = 1;
+    // The index of the vector that we currently focus on.
+    std::size_t cur = 1;
+    // The number of zero vectors above cursor.
+    // Hence, nzero < cur must always hold.
+    std::size_t nzero = 0;
 
     // Proceed the algorithm on the first k rows.
     while (cur < nvecs) {
-        if (_impl_LLL::reduce<Ops>(cur, cur-1, m, us, vs, lambda, false)) {
+        auto howswap = _impl_LLL::reduce<Ops,false>(cur, cur-1, m, us, vs, lambda);
+        if (howswap & _impl_LLL::HowSwap::ShouldSwap) {
             _impl_LLL::swap<Ops>(cur, m, us, vs, lambda);
-            if (cur > 1) --cur;
+            if (cur > 1) {
+                --nzero;
+                --cur;
+            }
+        }
+        else if (howswap & _impl_LLL::HowSwap::ZeroReducer) {
+            ++nzero;
+            ++cur;
         }
         else {
-            for (size_t i = 2; i <= cur; ++i)
-                _impl_LLL::reduce<Ops>(cur, cur-i, m, us, vs, lambda, true);
+            for (std::size_t i = 2; i <= cur; ++i)
+                _impl_LLL::reduce<Ops,true>(cur, cur-i, m, us, vs, lambda);
             ++cur;
+            nzero = 0;
         }
     }
 
-    return true;
+    return std::make_optional(Ops::dual_t::size(m) - nzero);
 }
 
 }
