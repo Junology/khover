@@ -59,9 +59,38 @@ struct rowops {
     {
         std::size_t c = 0;
 
-        for(; c < mat.cols(); ++c) {
+        for(; c < static_cast<std::size_t>(mat.cols()); ++c) {
             if (mat(i,c) != 0) {
                 f(c, mat(i,c));
+                break;
+            }
+        }
+
+        // Since Eigen >= 3.4.0, STL iterator will come.
+        // for(auto x : mat.row(i)) {
+        //     if(x != 0) {
+        //         f(c,x);
+        //         break;
+        //     }
+        //     ++c;
+        // }
+
+        return c;
+    }
+
+    // The same as find_nonzero but range check is not performed.
+    template <class Derived, class F>
+    static inline
+    std::size_t find_nonzero_unsafe(
+        const Eigen::MatrixBase<Derived> &mat,
+        std::size_t i, F f)
+        noexcept
+    {
+        std::size_t c = 0;
+
+        for(; c < static_cast<std::size_t>(mat.cols()); ++c) {
+            if (mat.coeff(i,c) != 0) {
+                f(c, mat.coeff(i,c));
                 break;
             }
         }
@@ -132,7 +161,7 @@ struct colops {
     {
         std::size_t r = 0;
 
-        for(; r < mat.rows(); ++r) {
+        for(; r < static_cast<std::size_t>(mat.rows()); ++r) {
             if (mat(r,j) != 0) {
                 f(r, mat(r,j));
                 break;
@@ -146,6 +175,24 @@ struct colops {
         //     }
         //     ++r;
         // }
+        return r;
+    }
+
+    template <class Derived, class F>
+    static inline
+    std::size_t find_nonzero_unsafe(
+        const Eigen::MatrixBase<Derived> &mat,
+        std::size_t j, F f)
+        noexcept
+    {
+        std::size_t r = 0;
+
+        for(; r < static_cast<std::size_t>(mat.rows()); ++r) {
+            if (mat.coeff(r,j) != 0) {
+                f(r, mat.coeff(r,j));
+                break;
+            }
+        }
         return r;
     }
 };

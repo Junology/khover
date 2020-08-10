@@ -27,3 +27,14 @@ khover_test(
   Eigen3::Eigen
   )
 
+khover_test(
+  abelian_test
+  ""
+  Eigen3::Eigen
+  )
+
+khover_test(
+  hochschild_test
+  ""
+  Eigen3::Eigen
+  )

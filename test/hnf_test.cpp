@@ -7,12 +7,12 @@
 template<class Derived>
 bool is_rowHNF(const Eigen::MatrixBase<Derived> &mat) noexcept
 {
-    for(std::size_t i = 0, j = 0; j < mat.cols() && i < mat.rows(); ++j) {
-        for(std::size_t k = i+1; k < mat.rows(); ++k)
+    for(int i = 0, j = 0; j < mat.cols() && i < mat.rows(); ++j) {
+        for(int k = i+1; k < mat.rows(); ++k)
             if (mat(k,j) != 0)
                 return false;
         if (mat(i,j) != 0) {
-            for(std::size_t k = 0; k < i; ++k)
+            for(int k = 0; k < i; ++k)
                 if (mat(k,j) < 0 || mat(i,j) < mat(k,j))
                     return false;
             ++i;
@@ -110,6 +110,35 @@ int main(int argc, char*argv[])
             std::cout << u << std::endl;
             std::cout << "rk=" << (rk ? *rk : -1) << std::endl;
             return -1;
+        }
+    }
+
+    std::cout << "==========" << std::endl;
+    std::cout << "HNF of zero matrices" << std::endl;
+    std::cout << "==========" << std::endl;
+    {
+        using matrix_t = Eigen::Matrix<std::int64_t,Eigen::Dynamic,Eigen::Dynamic>;
+        matrix_t zmat;
+
+        for(std::size_t r = 0; r < 5; ++r) {
+            for(std::size_t c = 0; c < 5; ++c) {
+                // test row HNF
+                zmat = matrix_t::Zero(r,c);
+                khover::hnf_LLL<khover::rowops>(zmat, {}, {});
+                if (!zmat.isZero()) {
+                    std::cout << "row HNF of zero is not zero!" << std::endl;
+                    std::cout << zmat << std::endl;
+                    return -1;
+                }
+                // test column HNF
+                zmat.setZero();
+                khover::hnf_LLL<khover::colops>(zmat, {}, {});
+                if (!zmat.isZero()) {
+                    std::cout << "column HNF of zero is not zero!" << std::endl;
+                    std::cout << zmat << std::endl;
+                    return -1;
+                }
+            }
         }
     }
 

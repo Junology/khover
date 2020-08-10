@@ -204,12 +204,12 @@ auto reduce(
     -> std::underlying_type_t<HowSwap>
 {
     /* Find the first non-zero entry of the i-th and j-th vectors. */
-    std::size_t l1 = Ops::find_nonzero(
+    std::size_t l1 = Ops::find_nonzero_unsafe(
         m, i,
         [&](std::size_t l,auto x) {
             if (std::signbit(x)) negate<Ops>(i, m, us, vs, lambda);
         } );
-    std::size_t l2 = Ops::find_nonzero(
+    std::size_t l2 = Ops::find_nonzero_unsafe(
         m, k,
         [&](std::size_t l,auto x) {
             if (std::signbit(x)) negate<Ops>(k, m, us, vs, lambda);

@@ -94,17 +94,19 @@ std::optional<std::size_t> hnf_LLL(
         return std::make_optional(0);
     }
 
-    // If the given matrix consists of a single row vector, then all we have to do is to check if the first non-zero entry is positive.
+    // Ensure the pivot of the first vector to be non-negative.
+    std::size_t l = Ops::find_nonzero(
+        m, 0,
+        [&m,&us,&vs](std::size_t l, auto x) {
+            if (std::signbit(x)) {
+                Ops::scalar(m,0,-1);
+                for_each_tuple(us, [](auto& u){ Ops::dual_t::scalar(u,0,-1); });
+                for_each_tuple(vs, [](auto& v){ Ops::scalar(v,0,-1); });
+            }
+        });
+
+    // If the given matrix consists of a single vector, then all the step is finished.
     if (nvecs == 1) {
-        std::size_t l = Ops::find_nonzero(
-            m, 0,
-            [&m,&us,&vs](std::size_t l, auto x) {
-                if (std::signbit(x)) {
-                    Ops::scalar(m,0,-1);
-                    for_each_tuple(us, [](auto& u){ Ops::dual_t::scalar(u,0,-1); });
-                    for_each_tuple(vs, [](auto& v){ Ops::scalar(v,0,-1); });
-                }
-            });
         return std::make_optional(l < Ops::dual_t::size(m) ? 1 : 0);
     }
 
@@ -113,8 +115,8 @@ std::optional<std::size_t> hnf_LLL(
     // The index of the vector that we currently focus on.
     std::size_t cur = 1;
     // The number of zero vectors above cursor.
-    // Hence, nzero < cur must always hold.
-    std::size_t nzero = 0;
+    // Hence, nzero <= cur must always hold.
+    std::size_t nzero = l < Ops::size(m) ? 0 : 1;
 
     // Proceed the algorithm on the first k rows.
     while (cur < nvecs) {
