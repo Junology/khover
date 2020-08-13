@@ -28,7 +28,7 @@ public:
     using matrix_t = Eigen::Matrix<integer_t,Eigen::Dynamic,Eigen::Dynamic>;
 
 private:
-    //! The presentation matrix, which is kept to be a column echelon form.
+    //! The presentation matrix, which is kept to be a column HNF.
     matrix_t m_repMat;
     //! The least rank of the free part of the abelian group.
     std::size_t m_freerk;
@@ -39,12 +39,12 @@ public:
 
     //! Constructor from a presentation matrix.
     //! Represent an abelian group by a presentation matrix.
-    //! \tparam IsColEchelon If IsColEchelon::value == true, then repMat must be in the column echelon form. Otherwise, its column HNF is computed.
-    template <class Derived, class IsColEchelon>
-    AbelianGroup(Eigen::MatrixBase<Derived> const& repMat, IsColEchelon, std::size_t freerk = 0) noexcept
+    //! \tparam IsColHNF If IsColHNF::value == true, then repMat must be in the column HNF. Otherwise, its column HNF is computed.
+    template <class Derived, class IsColHNF>
+    AbelianGroup(Eigen::MatrixBase<Derived> const& repMat, IsColHNF, std::size_t freerk = 0) noexcept
         : m_repMat(repMat), m_freerk(freerk)
     {
-        if constexpr(!IsColEchelon::value) {
+        if constexpr(!IsColHNF::value) {
             auto rk = hnf_LLL<khover::colops>(m_repMat, {}, {});
             if(rk) {
                 m_repMat = m_repMat.leftCols(*rk).eval();
@@ -85,9 +85,6 @@ public:
         /*
          * Take columns with pivot = 1 to left
          */
-
-        // Queue to store the indices of columns with non-unit pivots.
-        std::queue<std::size_t> q_nupiv;
         // The rank of the presentation matrix over Q (the field of rationals).
         std::size_t rk = 0;
         // The number of columns with pivot = 1.
@@ -99,45 +96,87 @@ public:
             // A column with pivot 1 is found.
             if (Ops::at(m_repMat, rk).coeff(i) == 1) {
                 // If there is a column with non-unit pivot on left, swap with it.
-                if (!q_nupiv.empty()) {
-                    Ops::swap(m_repMat, rk, q_nupiv.front());
-                    q_nupiv.pop();
-                    q_nupiv.push(rk);
+                if (rk > upivs) {
+                    Ops::swap(m_repMat, rk, upivs);
+                }
+                // If the pivot is below diagonal, raise it.
+                if (i > upivs) {
+                    Ops::dual_t::swap(m_repMat, i, upivs);
+                    khover::for_each_tuple(
+                        pres,
+                        [i,upivs](auto& u) {
+                            Ops::dual_t::swap(u, i, upivs);
+                        });
+                    khover::for_each_tuple(
+                        posts,
+                        [i,upivs](auto& v) {
+                            Ops::swap(v, i, upivs);
+                        });
                 }
                 ++upivs;
                 ++rk;
             }
             // A column with pivot != 1 is found.
             else if (Ops::at(m_repMat, rk).coeff(i) != 0) {
-                q_nupiv.push(rk);
                 ++rk;
             }
         }
+
+        // Reduce homomorphisms
+        matrix_t redPiv_mat
+            = matrix_t::Identity(m_repMat.rows() + m_freerk - upivs,
+                             m_repMat.rows() + m_freerk);
+        redPiv_mat.bottomLeftCorner(m_repMat.rows() - upivs, upivs).noalias()
+            = - m_repMat.bottomLeftCorner(m_repMat.rows() - upivs, upivs);
+        khover::for_each_tuple(
+            pres,
+            [&](auto& u) {
+                u = redPiv_mat.bottomRows(m_repMat.rows() + m_freerk - upivs) * u;
+            } );
+        khover::for_each_tuple(
+            posts,
+            [upivs](auto& v) {
+                v = v.block(0, upivs, v.rows(), v.cols());
+            } );
+
+        // Forget thw row/columns with unital pivots.
+        m_freerk += m_repMat.rows() - rk;
+        m_repMat = m_repMat.block(upivs, upivs, m_repMat.rows() - upivs, rk - upivs).eval();
+        rk -= upivs;
 
         // Compute the row HNF
         if (!hnf_LLL<khover::rowops>(m_repMat,posts, pres))
             return false;
 
-        // Reduce the presentation.
-        m_freerk += static_cast<std::size_t>(m_repMat.rows() - rk);
+        // Reduce the presentation matrix again.
+        m_repMat = m_repMat.topRows(rk).eval();
 
-        std::size_t rs = std::min(static_cast<std::size_t>(m_repMat.rows()),rk)-upivs;
-        std::size_t cs = rk - upivs;
-        m_repMat = m_repMat.block(upivs, upivs, rs, cs);
-
-        // Reduce the homomorphisms.
-        for_each_tuple(
-            pres,
-            [upivs](auto& u){ u = u.bottomRows(u.rows() - upivs); });
-        for_each_tuple(
-            posts,
-            [upivs](auto& v){ v = v.rightCols(v.cols() - upivs); });
-
-        // Keep the presentation matrix in column echelon forms.
+        // Keep the presentation matrix in column HNF.
         khover::hnf_LLL<khover::colops>(m_repMat, {}, {});
 
         // Finish successfully.
         return true;
+    }
+
+    //! Compute the abelian group in the form of the pair of the free rank and the list of torsions.
+    //! \remark The result is not necessarily in the normal form.
+    std::pair<std::size_t, std::vector<int>> compute() noexcept {
+        do {
+            reduce({}, {});
+        } while(!m_repMat.isDiagonal());
+
+        auto diag = m_repMat.diagonal();
+        std::vector<int> torsions{};
+        std::size_t r = 0;
+
+        for(int i = 0; i < diag.size(); ++i) {
+            if (diag.coeff(i) == 0)
+                ++r;
+            else if(std::abs(diag.coeff(i)) != 1)
+                torsions.push_back(std::abs(diag.coeff(i)));
+        }
+
+        return std::make_pair(r+m_freerk, std::move(torsions));
     }
 };
 

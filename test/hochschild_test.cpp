@@ -17,6 +17,21 @@ using namespace khover;
 using matrix_t = Eigen::Matrix<int64_t,Eigen::Dynamic,Eigen::Dynamic>;
 using coeff_t = int64_t;
 
+//! Print vectors in streams
+template<class T>
+std::ostream& operator<<(std::ostream& os, std::vector<T> const& vec) {
+    if (vec.empty()) {
+        os << "{}";
+        return os;
+    }
+
+    os << "{" << vec.front();
+    for(auto itr = std::next(std::begin(vec)); itr != std::end(vec); ++itr)
+        os << ", " << *itr;
+    os << "}";
+    return os;
+}
+
 //! Miscellaneous functions
 template <class T>
 constexpr T binom(T n, T k)
@@ -123,11 +138,46 @@ int main(int argc, char* argv[])
         get_diff<n>(3)
         );
 
-    for(auto h : ch.compute()) {
-        h.reduce({}, {});
-        std::cout << "---" << std::endl;
-        std::cout << "generators = " << h.get_repmatrix().rows() << std::endl;
-        std::cout << h.get_repmatrix() << std::endl;
+    auto h = ch.compute();
+
+    std::cout << "---" << std::endl;
+    std::cout << "Computing H_0..." << std::endl;
+    auto h0 = h[0].compute();
+    std::cout << "Free rank: " << h0.first << std::endl;
+    std::cout << "Torsions: " << h0.second << std::endl;
+    if (h0.first != 3 || !h0.second.empty() != 0) {
+        std::cerr << "Unexpected 0th homology" << std::endl;
+        return -1;
+    }
+
+    std::cout << "---" << std::endl;
+    std::cout << "Computing H_1..." << std::endl;
+    auto h1 = h[1].compute();
+    std::cout << "Free rank: " << h1.first << std::endl;
+    std::cout << "Torsions: " << h1.second << std::endl;
+    if (h1.first != 2 || h1.second.size() != 1 || h1.second[0] != n) {
+        std::cerr << "Unexpected 1st homology" << std::endl;
+        return -1;
+    }
+
+    std::cout << "---" << std::endl;
+    std::cout << "Computing H_2..." << std::endl;
+    auto h2 = h[2].compute();
+    std::cout << "Free rank: " << h2.first << std::endl;
+    std::cout << "Torsions: " << h2.second << std::endl;
+    if (h2.first != 2 || !h2.second.empty()) {
+        std::cerr << "Unexpected 2nd homology" << std::endl;
+        return -1;
+    }
+
+    std::cout << "---" << std::endl;
+    std::cout << "Computing H_1..." << std::endl;
+    auto h3 = h[3].compute();
+    std::cout << "Free rank: " << h3.first << std::endl;
+    std::cout << "Torsions: " << h3.second << std::endl;
+    if (h3.first != 2 || h3.second.size() != 1 || h3.second[0] != n) {
+        std::cerr << "Unexpected 0th homology" << std::endl;
+        return -1;
     }
 
     return 0;
