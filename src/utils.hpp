@@ -53,7 +53,7 @@ constexpr T&& identity(T&& t) noexcept
 
 //! Traverse tuples
 template <class Tuple, class FuncT, class C=std::integral_constant<std::size_t, 0>>
-constexpr void for_each_tuple(Tuple &&t, FuncT f, C = {})
+constexpr void for_each_tuple(Tuple &&t, FuncT f, C = {}) noexcept
 {
     if constexpr(C::value < std::tuple_size<std::decay_t<Tuple>>::value) {
         f(std::get<C::value>(t));
@@ -66,7 +66,7 @@ template <
     class T, class Tuple, class BinOp,
     class C=std::integral_constant<std::size_t,0>
     >
-constexpr T foldl_tuple(T head, const Tuple &t, BinOp b, C = {})
+constexpr T foldl_tuple(T head, const Tuple &t, BinOp b, C = {}) noexcept
 {
     if constexpr(C::value < std::tuple_size<Tuple>::value) {
         return foldl_tuple(
@@ -77,6 +77,7 @@ constexpr T foldl_tuple(T head, const Tuple &t, BinOp b, C = {})
         return head;
     }
 }
+
 
 /*!
  * \function array_to_tuple_with
@@ -101,6 +102,11 @@ constexpr auto map_to_tuple(T const (&arr)[n], F&& f) noexcept
     return _impl::map_to_tuple_impl(arr, std::forward<F>(f),
                                     std::make_index_sequence<n>());
 }
+
+
+/*******************************!
+ *** \section Math functions ***
+ *******************************/
 
 //! Integral division with "truncated toward -infinity."
 template <class T>
