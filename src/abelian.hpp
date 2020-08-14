@@ -82,6 +82,18 @@ public:
         std::tuple<Pres&...> const & pres
         ) noexcept
     {
+        static_assert(
+            std::conjunction_v<
+            std::bool_constant<Posts::ColsAtCompileTime == Eigen::Dynamic>...
+            >,
+            "The function may change the number of columns of matrices in the posts parameter, so make sure they have dynamic numbers of columns.");
+
+        static_assert(
+            std::conjunction_v<
+            std::bool_constant<Pres::RowsAtCompileTime == Eigen::Dynamic>...
+            >,
+            "The function may change the number of rows of matrices in the posts parameter, so make sure they have dynamic numbers of rows.");
+
         /*
          * Take columns with pivot = 1 to left
          */
@@ -124,10 +136,13 @@ public:
 
         // Reduce homomorphisms
         matrix_t redPiv_mat
-            = matrix_t::Identity(m_repMat.rows() + m_freerk - upivs,
-                             m_repMat.rows() + m_freerk);
-        redPiv_mat.bottomLeftCorner(m_repMat.rows() - upivs, upivs).noalias()
+            = matrix_t::Identity(
+                m_repMat.rows() + m_freerk,
+                m_repMat.rows() + m_freerk
+                ).bottomRows(m_repMat.rows() + m_freerk - upivs);
+        redPiv_mat.block(0, 0, m_repMat.rows() - upivs, upivs).noalias()
             = - m_repMat.bottomLeftCorner(m_repMat.rows() - upivs, upivs);
+
         khover::for_each_tuple(
             pres,
             [&](auto& u) {
@@ -136,7 +151,7 @@ public:
         khover::for_each_tuple(
             posts,
             [upivs](auto& v) {
-                v = v.block(0, upivs, v.rows(), v.cols());
+                v = v.rightCols(v.cols() - upivs); //v.block(0, upivs, v.rows(), v.cols()-upivs).eval();
             } );
 
         // Forget thw row/columns with unital pivots.
@@ -160,7 +175,8 @@ public:
 
     //! Compute the abelian group in the form of the pair of the free rank and the list of torsions.
     //! \remark The result is not necessarily in the normal form.
-    std::pair<std::size_t, std::vector<int>> compute() noexcept {
+    std::pair<std::size_t, std::vector<int>>
+    compute() noexcept {
         do {
             reduce({}, {});
         } while(!m_repMat.isDiagonal());
@@ -177,6 +193,52 @@ public:
         }
 
         return std::make_pair(r+m_freerk, std::move(torsions));
+    }
+
+    //! Compute the image of a homomorphism whose codomain is this abelian group.
+    //! \tparam ReturnMorphism If ReturnMorphism::value == true, then the function also returns the matrix representing the morphism from the image to this group.
+    template <class Derived, class DoesReturnMorphism = std::false_type>
+    auto
+    image(
+        Eigen::MatrixBase<Derived> const& morph,
+        DoesReturnMorphism = DoesReturnMorphism{}
+        ) const noexcept
+        -> std::conditional_t<
+            DoesReturnMorphism::value,
+            std::optional<std::pair<AbelianGroup,matrix_t>>,
+            std::optional<AbelianGroup>
+            >
+    {
+        // If the number of rows doesn't agree, return immediately.
+        if(morph.rows() != static_cast<int>(m_freerk) + m_repMat.rows())
+            return std::nullopt;
+
+        // Sum of the images of the homomorphism and the representation matrix.
+        matrix_t sumspace(morph.rows(), morph.cols() + m_repMat.cols());
+        sumspace << morph, get_repmatrix();
+
+        // Compute the column HNF of the sumspace.
+        matrix_t u = matrix_t::Identity(sumspace.cols(), sumspace.cols());
+        auto rk = hnf_LLL<khover::colops>(sumspace, std::tie(u), {});
+
+        // Error occured.
+        if(!rk)
+            return std::nullopt;
+
+        // Return the resulting abelian group together with the homomorphism from it.
+        if constexpr (DoesReturnMorphism::value) {
+            return std::make_pair(
+                AbelianGroup(
+                    u.topRightCorner(*rk, m_repMat.cols()),
+                    std::false_type{}),
+                sumspace.leftCols(*rk)
+                );
+        }
+        else {
+            return AbelianGroup(
+                u.topRightCorner(*rk, m_repMat.cols()),
+                std::false_type{});
+        }
     }
 };
 
