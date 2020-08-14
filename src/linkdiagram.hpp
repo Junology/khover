@@ -6,6 +6,7 @@
  * \date August, 2020: created
  */
 
+#include <bitset>
 #include <vector>
 #include <optional>
 
@@ -19,6 +20,14 @@ namespace khover {
 //! It only contains minimum information for "state-sum" methods.
 class LinkDiagram {
 public:
+    //! The type representing states.
+    //! This limits the number of crossings.
+    using state_t = std::bitset<64>;
+
+    //! The type indexing connected components.
+    using component_t = unsigned char;
+
+    //! The type representing each crossings.
     struct Crossing {
         //! A flag if the crossing is positive or not.
         bool is_positive;
@@ -36,7 +45,10 @@ private:
     std::vector<Crossing> m_cross;
 
 public:
-    //! Constructor.
+    /*!
+     * \name Constructors, Destructors, and assignment operators.
+     */
+    //\{
     //! This is the only chance to set the number of arcs (except copies).
     LinkDiagram(std::size_t numarcs, std::vector<Crossing> const& cross) noexcept
         : m_numarcs(numarcs), m_cross(cross)
@@ -50,17 +62,48 @@ public:
 
     //! The class is copy constructible.
     LinkDiagram(LinkDiagram const&) = default;
+
     //! The class is move constructible.
     LinkDiagram(LinkDiagram&&) = default;
+
     //! The class is copyable.
     LinkDiagram& operator=(LinkDiagram const&) = default;
+
     //! The class is movable.
     LinkDiagram& operator=(LinkDiagram &&) = default;
+    //\}
 
-    std::size_t get_numarcs() const noexcept { return m_numarcs; }
-    std::size_t get_numcrosses() const noexcept { return m_cross.size(); }
+    /*!
+     * \name Getters.
+     */
+    //\{
+    //! Get the number of arcs.
+    std::size_t narcs() const noexcept { return m_numarcs; }
 
+    //! Get the number of crossings.
+    std::size_t ncrosses() const noexcept { return m_cross.size(); }
+
+    //! Compute writhe
+    int writhe() const noexcept;
+
+    //! Get the list of crossings.
     const std::vector<Crossing>& crosses() const noexcept { return m_cross; }
+
+    //\}
+
+    /*!
+     * \name State manipulation.
+     */
+    //\{
+    //! Compute the cohomological degrees of a given state in the convention of the following article:
+    //! Clark, David; Morrison, Scott; Walker, Kevin. Fixing the functoriality of Khovanov homology. Geom. Topol. 13 (2009), no.3, 1499--1582. doi:10.2140/gt.2009.13.1499.
+    int cohDegree(state_t st) const noexcept;
+
+    //! Compute the connected components in the smoothing of the diagram corresponding to a given state.
+    //! Each component is indexed by unsigned integers.
+    //! \retval c For each i in the interval [0,narcs()-1], c[i] is the minimum index of arcs in the component that the i-th arc belongs to.
+    std::vector<component_t> smoothing(state_t st) const noexcept;
+    //\}
 };
 
 //! Type used to represent Gauss codes.

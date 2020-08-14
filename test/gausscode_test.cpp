@@ -12,8 +12,8 @@ int main(int argc, char* argv[])
         auto trefoil = read_gauss_code({1, -3, 2, -1, 3, -2}, {false});
 
         if (!trefoil
-            || trefoil->get_numcrosses() != 3
-            || trefoil->get_numarcs() != 6
+            || trefoil->ncrosses() != 3
+            || trefoil->narcs() != 6
             || trefoil->crosses()[0].is_positive != false
             || trefoil->crosses()[0].adj_arc[0] != 5
             || trefoil->crosses()[0].adj_arc[1] != 0
@@ -45,8 +45,8 @@ int main(int argc, char* argv[])
             {1,-2, 5,-6, 3,-1, 2,-4, 6,-5, 4,-3}, {false});
 
         if(!six_two
-           || six_two->get_numarcs() != 12
-           || six_two->get_numcrosses() != 6
+           || six_two->narcs() != 12
+           || six_two->ncrosses() != 6
            || six_two->crosses()[0].is_positive != false
            || six_two->crosses()[0].adj_arc[0] != 11
            || six_two->crosses()[0].adj_arc[1] != 0
@@ -92,8 +92,8 @@ int main(int argc, char* argv[])
             {1,-2, 5,-6, 3,-1, 2,-4, 6,-5, 4,-3}, {true});
 
         if(!six_two
-           || six_two->get_numarcs() != 12
-           || six_two->get_numcrosses() != 6
+           || six_two->narcs() != 12
+           || six_two->ncrosses() != 6
            || six_two->crosses()[0].is_positive != true
            || six_two->crosses()[0].adj_arc[0] != 11
            || six_two->crosses()[0].adj_arc[1] != 0
@@ -140,8 +140,8 @@ int main(int argc, char* argv[])
             {false});
 
         if(!borromean
-           || borromean->get_numarcs() != 12
-           || borromean->get_numcrosses() != 6
+           || borromean->narcs() != 12
+           || borromean->ncrosses() != 6
            || borromean->crosses()[0].is_positive != false
            || borromean->crosses()[0].adj_arc[0] != 3
            || borromean->crosses()[0].adj_arc[1] != 0

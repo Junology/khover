@@ -45,3 +45,9 @@ khover_test(
   "${CMAKE_SOURCE_DIR}/src/gausscode.cpp"
   Eigen3::Eigen
   )
+
+khover_test(
+  linkdiagram_test
+  "${CMAKE_SOURCE_DIR}/src/gausscode.cpp;${CMAKE_SOURCE_DIR}/src/linkdiagram.cpp"
+  Eigen3::Eigen
+  )
