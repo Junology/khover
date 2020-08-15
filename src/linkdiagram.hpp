@@ -10,6 +10,8 @@
 #include <vector>
 #include <optional>
 
+#include "states.hpp"
+
 //* Debug
 #include <iostream>
 // */
@@ -20,13 +22,6 @@ namespace khover {
 //! It only contains minimum information for "state-sum" methods.
 class LinkDiagram {
 public:
-    //! The type representing states.
-    //! This limits the number of crossings.
-    using state_t = std::bitset<64>;
-
-    //! The type indexing connected components.
-    using component_t = unsigned char;
-
     //! The type representing each crossings.
     struct Crossing {
         //! A flag if the crossing is positive or not.
@@ -100,8 +95,8 @@ public:
     int cohDegree(state_t st) const noexcept;
 
     //! Compute the connected components in the smoothing of the diagram corresponding to a given state.
-    //! Each component is indexed by unsigned integers.
-    //! \retval c For each i in the interval [0,narcs()-1], c[i] is the minimum index of arcs in the component that the i-th arc belongs to.
+    //! Components are indexed by consequtive non-negative integers begining from 0 in the order so that componens with smaller indices contain arcs with smaller indices.
+    //! \retval c For each i in the interval [0,narcs()-1], c[i] is the index of the component that contains the i-th arc.
     std::vector<component_t> smoothing(state_t st) const noexcept;
     //\}
 };

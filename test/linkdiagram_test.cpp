@@ -67,10 +67,30 @@ int main(int argc, char* argv[])
         }
     }
 
+    // Smoothing test: 0b000010
+    {
+        auto comptbl = six_two->smoothing(0b000010u);
+        std::vector<unsigned char> shouldbe = {0, 0, 1, 2, 3, 0, 0, 2, 1, 0, 2, 3};
+
+        if (!std::equal(comptbl.begin(), comptbl.end(), shouldbe.begin())) {
+            std::cerr << "Wrong components:" << std::endl;
+            for(auto c : comptbl) {
+                std::cerr << static_cast<int>(c) << "; ";
+            }
+            std::cerr << std::endl;
+            std::cerr << "Shouldbe:" << std::endl;
+            for(auto c : shouldbe) {
+                std::cerr << static_cast<int>(c) << "; ";
+            }
+            std::cerr << std::endl;
+            return -1;
+        }
+    }
+
     // Smoothing test: 0b000011
     {
         auto comptbl = six_two->smoothing(0b000011u);
-        std::vector<unsigned char> shouldbe = {0, 0, 2, 3, 0, 0, 0, 3, 2, 0, 3, 0};
+        std::vector<unsigned char> shouldbe = {0, 0, 1, 2, 0, 0, 0, 2, 1, 0, 2, 0};
 
         if (!std::equal(comptbl.begin(), comptbl.end(), shouldbe.begin())) {
             std::cerr << "Wrong components:" << std::endl;

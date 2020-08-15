@@ -16,17 +16,19 @@ using namespace khover;
  *************************/
 
 //! Merge two components containing designated two arcs.
+//! \return The index of the component, if any, that was forgotten in merging.
 static
-void merge_components(
-    std::vector<LinkDiagram::component_t> &comptbl,
+std::optional<component_t>
+merge_components(
+    std::vector<component_t> &comptbl,
     std::size_t i1, std::size_t i2)
     noexcept
 {
     // If two indices are the same, there is nothing to do.
-    LinkDiagram::component_t c1 = comptbl[i1], c2 = comptbl[i2];
+    component_t c1 = comptbl[i1], c2 = comptbl[i2];
 
     if (c2 == c1)
-        return;
+        return std::nullopt;
 
     // We may assume c1 < c2
     if (c1 > c2)
@@ -36,6 +38,8 @@ void merge_components(
         if (idx == c2)
             idx = c1;
     }
+
+    return c2;
 }
 
 
@@ -73,11 +77,12 @@ int khover::LinkDiagram::cohDegree(state_t st) const noexcept
 }
 
 // Compute the connected components in the smoothing of the diagram corresponding to a given state.
-std::vector<khover::LinkDiagram::component_t>
+std::vector<component_t>
 khover::LinkDiagram::smoothing(state_t st)
     const noexcept
 {
     std::vector<component_t> result(m_numarcs);
+    std::bitset<max_components> index_rmed{0u};
 
     // Begin with discrete spaces
     for(std::size_t i = 0; i < m_numarcs; ++i) {
@@ -87,18 +92,45 @@ khover::LinkDiagram::smoothing(state_t st)
     for(std::size_t i = 0; i < m_cross.size(); ++i) {
         // state=1 on positive or state=0 on negative
         if(m_cross[i].is_positive == st.test(i)) {
-            merge_components(
-                result, m_cross[i].adj_arc[0], m_cross[i].adj_arc[2]);
-            merge_components(
-                result, m_cross[i].adj_arc[1], m_cross[i].adj_arc[3]);
+            if (auto rmc = merge_components(
+                    result, m_cross[i].adj_arc[0], m_cross[i].adj_arc[2]);
+                rmc)
+            {
+                index_rmed.set(*rmc);
+            }
+            if (auto rmc = merge_components(
+                    result, m_cross[i].adj_arc[1], m_cross[i].adj_arc[3]);
+                rmc)
+            {
+                index_rmed.set(*rmc);
+            }
         }
         // state=0 on positive or state=1 on negative
         else {
-            merge_components(
-                result, m_cross[i].adj_arc[0], m_cross[i].adj_arc[3]);
-            merge_components(
-                result, m_cross[i].adj_arc[1], m_cross[i].adj_arc[2]);
+            if (auto rmc = merge_components(
+                    result, m_cross[i].adj_arc[0], m_cross[i].adj_arc[3]);
+                rmc)
+            {
+                index_rmed.set(*rmc);
+            }
+            if (auto rmc = merge_components(
+                    result, m_cross[i].adj_arc[1], m_cross[i].adj_arc[2]);
+                rmc)
+            {
+                index_rmed.set(*rmc);
+            }
         }
+    }
+
+    // re-labeling the components so that indices are consequtive.
+    constexpr decltype(index_rmed) mask{~0lu};
+    constexpr std::size_t nbits = std::min(
+        static_cast<std::size_t>(max_components),
+        static_cast<std::size_t>(
+            std::numeric_limits<unsigned long long int>::digits));
+
+    for(auto& cind : result) {
+        cind -= (index_rmed & (mask >> (nbits-cind))).count();
     }
 
     return result;
