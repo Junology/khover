@@ -95,7 +95,7 @@ public:
     int cohDegree(state_t st) const noexcept;
 
     //! Compute the connected components in the smoothing of the diagram corresponding to a given state.
-    //! Components are indexed by consequtive non-negative integers begining from 0 in the order so that componens with smaller indices contain arcs with smaller indices.
+    //! Components are indexed by consecutive non-negative integers begining from 0 in the order so that componens with smaller indices contain arcs with smaller indices.
     //! \retval c For each i in the interval [0,narcs()-1], c[i] is the index of the component that contains the i-th arc.
     std::vector<component_t> smoothing(state_t st) const noexcept;
     //\}

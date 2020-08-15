@@ -41,6 +41,12 @@ khover_test(
   )
 
 khover_test(
+  states_test
+  ""
+  Eigen3::Eigen
+  )
+
+khover_test(
   gausscode_test
   "${CMAKE_SOURCE_DIR}/src/gausscode.cpp"
   Eigen3::Eigen

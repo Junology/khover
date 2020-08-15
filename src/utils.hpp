@@ -148,5 +148,30 @@ inline constexpr T cipow(T x, unsigned int n, T init = 1) noexcept
     */
 }
 
+inline constexpr
+std::size_t
+binom(std::size_t n, std::size_t k)
+    noexcept
+{
+    if (k < 0 || k > n)
+        return 0;
+
+    if (k > n-k)
+        k = n-k;
+
+    if (k == 0)
+        return 1;
+
+    std::size_t result = 1;
+
+    for (std::size_t i = 0; i < k; ++i)
+    {
+        result *= n-i;
+        result /= (i+1);
+    }
+
+    return result;
+}
+
 }
 
