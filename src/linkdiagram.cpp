@@ -140,7 +140,7 @@ int LinkDiagram::stateCoeff(state_t st_before, state_t st_after)
 }
 
 // Compute the connected components in the smoothing of the diagram corresponding to a given state.
-std::vector<component_t>
+std::pair<std::size_t, std::vector<component_t>>
 khover::LinkDiagram::smoothing(state_t st)
     const noexcept
 {
@@ -190,5 +190,7 @@ khover::LinkDiagram::smoothing(state_t st)
         cind -= (index_rmed & low_window<max_components>(cind)).count();
     }
 
-    return result;
+    return std::make_pair(
+        m_numarcs - index_rmed.count(),
+        std::move(result));
 }

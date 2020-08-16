@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <utility>
 #include <bitset>
 #include <vector>
 #include <optional>
@@ -112,8 +113,9 @@ public:
 
     //! Compute the connected components in the smoothing of the diagram corresponding to a given state.
     //! Components are indexed by consecutive non-negative integers begining from 0 in the order so that componens with smaller indices contain arcs with smaller indices.
-    //! \retval c For each i in the interval [0,narcs()-1], c[i] is the index of the component that contains the i-th arc.
-    std::vector<component_t> smoothing(state_t st) const noexcept;
+    //! \retval (n,c) For each 0 <= i narcs()-1, c[i] is the index of the component that contains the i-th arc, and n is the number of components.
+    std::pair<std::size_t,std::vector<component_t>>
+    smoothing(state_t st) const noexcept;
     //\}
 };
 

@@ -39,10 +39,11 @@ int main(int argc, char* argv[])
 
     // Smoothing test: all 0
     {
-        auto comptbl = six_two->smoothing(0b000000u);
+        auto [ncomp, comptbl] = six_two->smoothing(0b000000u);
         std::vector<unsigned char> shouldbe = {0, 1, 2, 3, 4, 0, 1, 3, 2, 1, 3, 4};
 
-        if (!std::equal(comptbl.begin(), comptbl.end(), shouldbe.begin())) {
+        if (ncomp != 5
+            || !std::equal(comptbl.begin(), comptbl.end(), shouldbe.begin())) {
             std::cerr << "Wrong components:" << std::endl;
             for(auto c : comptbl) {
                 std::cout << static_cast<int>(c) << "; ";
@@ -54,10 +55,11 @@ int main(int argc, char* argv[])
 
     // Smoothing test: 0b000001
     {
-        auto comptbl = six_two->smoothing(0b000001u);
+        auto [ncomp, comptbl] = six_two->smoothing(0b000001u);
         std::vector<unsigned char> shouldbe = {0, 1, 2, 3, 0, 0, 1, 3, 2, 1, 3, 0};
 
-        if (!std::equal(comptbl.begin(), comptbl.end(), shouldbe.begin())) {
+        if (ncomp != 4
+            || !std::equal(comptbl.begin(), comptbl.end(), shouldbe.begin())) {
             std::cerr << "Wrong components:" << std::endl;
             for(auto c : comptbl) {
                 std::cout << static_cast<int>(c) << "; ";
@@ -69,10 +71,11 @@ int main(int argc, char* argv[])
 
     // Smoothing test: 0b000010
     {
-        auto comptbl = six_two->smoothing(0b000010u);
+        auto [ncomp, comptbl] = six_two->smoothing(0b000010u);
         std::vector<unsigned char> shouldbe = {0, 0, 1, 2, 3, 0, 0, 2, 1, 0, 2, 3};
 
-        if (!std::equal(comptbl.begin(), comptbl.end(), shouldbe.begin())) {
+        if (ncomp != 4
+            || !std::equal(comptbl.begin(), comptbl.end(), shouldbe.begin())) {
             std::cerr << "Wrong components:" << std::endl;
             for(auto c : comptbl) {
                 std::cerr << static_cast<int>(c) << "; ";
@@ -89,10 +92,11 @@ int main(int argc, char* argv[])
 
     // Smoothing test: 0b000011
     {
-        auto comptbl = six_two->smoothing(0b000011u);
+        auto [ncomp,comptbl] = six_two->smoothing(0b000011u);
         std::vector<unsigned char> shouldbe = {0, 0, 1, 2, 0, 0, 0, 2, 1, 0, 2, 0};
 
-        if (!std::equal(comptbl.begin(), comptbl.end(), shouldbe.begin())) {
+        if (ncomp != 3
+            || !std::equal(comptbl.begin(), comptbl.end(), shouldbe.begin())) {
             std::cerr << "Wrong components:" << std::endl;
             for(auto c : comptbl) {
                 std::cout << static_cast<int>(c) << "; ";
