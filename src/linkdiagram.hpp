@@ -6,6 +6,8 @@
  * \date August, 2020: created
  */
 
+#pragma once
+
 #include <bitset>
 #include <vector>
 #include <optional>
@@ -73,16 +75,22 @@ public:
      */
     //\{
     //! Get the number of arcs.
-    std::size_t narcs() const noexcept { return m_numarcs; }
+    inline
+    std::size_t
+    narcs() const noexcept { return m_numarcs; }
 
     //! Get the number of crossings.
-    std::size_t ncrosses() const noexcept { return m_cross.size(); }
+    inline
+    std::size_t
+    ncrosses() const noexcept { return m_cross.size(); }
 
     //! Compute writhe
     int writhe() const noexcept;
 
     //! Get the list of crossings.
-    const std::vector<Crossing>& crosses() const noexcept { return m_cross; }
+    inline
+    const std::vector<Crossing>&
+    crosses() const noexcept { return m_cross; }
 
     //\}
 
@@ -93,6 +101,14 @@ public:
     //! Compute the cohomological degrees of a given state in the convention of the following article:
     //! Clark, David; Morrison, Scott; Walker, Kevin. Fixing the functoriality of Khovanov homology. Geom. Topol. 13 (2009), no.3, 1499--1582. doi:10.2140/gt.2009.13.1499.
     int cohDegree(state_t st) const noexcept;
+
+    //! Check if a state is adjacent to the other in Khovanov's smoothing cube.
+    //! \param st_before A state that should be of a lower cohomological degree.
+    //! \param st_after A state that should be of a higher cohomological degree.
+    //! \retval 0 Two states are not adjacent to each other.
+    //! \retval 1 Two states are adjacent with positive sign.
+    //! \retval -1 Two states are adjacent with negative sign.
+    int stateCoeff(state_t st_before, state_t st_after) const noexcept;
 
     //! Compute the connected components in the smoothing of the diagram corresponding to a given state.
     //! Components are indexed by consecutive non-negative integers begining from 0 in the order so that componens with smaller indices contain arcs with smaller indices.

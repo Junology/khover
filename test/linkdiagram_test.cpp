@@ -102,5 +102,78 @@ int main(int argc, char* argv[])
         }
     }
 
+    // Adjacent state test:
+    {
+        state_t st0 = 0b010100;
+        state_t st1 = 0b010101;
+        state_t st2 = 0b011101;
+        state_t st3 = 0b111101;
+
+        if(six_two->stateCoeff(st0, st1) != 1
+           || six_two->stateCoeff(st1, st0) != 0)
+        {
+            std::cerr << "Wrong state adjacency: " << std::endl
+                      << st0 << std::endl << st1 << std::endl
+                      << "Coeffs = ("
+                      << six_two->stateCoeff(st0, st1) << ","
+                      << six_two->stateCoeff(st1, st0) << ")"
+                      << std::endl;
+            return -1;
+        }
+
+        if(six_two->stateCoeff(st1, st2) != -1
+           || six_two->stateCoeff(st2, st1) != 0)
+        {
+            std::cerr << "Wrong state adjacency: " << std::endl
+                      << st1 << std::endl << st2 << std::endl
+                      << "Coeffs = ("
+                      << six_two->stateCoeff(st1, st2) << ","
+                      << six_two->stateCoeff(st2, st1) << ")"
+                      << std::endl;
+            return -1;
+        }
+
+        if(six_two->stateCoeff(st2, st3) != 1
+           || six_two->stateCoeff(st3, st2) != 0)
+        {
+            std::cerr << "Wrong state adjacency: " << std::endl
+                      << st2 << std::endl << st3 << std::endl
+                      << "Coeffs = ("
+                      << six_two->stateCoeff(st2, st3) << ","
+                      << six_two->stateCoeff(st3, st2) << ")"
+                      << std::endl;
+            return -1;
+        }
+    }
+
+    // Skew-commutativity of cube.
+    for(std::size_t k = 0; k < 32; ++k) {
+        state_t st00 = k;
+
+        for(std::size_t i = 0; i < 5; ++i) {
+            if(st00.test(i))
+                continue;
+
+            for(std::size_t j = i+1; j < 6; ++j) {
+                if(st00.test(j))
+                    continue;
+
+                state_t st01 = st00, st10 = st00, st11 = st00;
+                st01.set(i);
+                st10.set(j);
+                st11.set(i);
+                st11.set(j);
+
+                if(six_two->stateCoeff(st00, st01)*six_two->stateCoeff(st01, st11)
+                   != -six_two->stateCoeff(st00, st10)*six_two->stateCoeff(st10, st11))
+                {
+                    std::cerr << "Cube is not skew-commutative:" << std::endl
+                              << st00 << std::endl
+                              << "(i,j)=(" << i << "," << j << ")" << std::endl;
+                    return -1;
+                }
+            }
+        }
+    }
     return 0;
 }

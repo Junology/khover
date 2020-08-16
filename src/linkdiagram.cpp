@@ -9,11 +9,44 @@
 #include <algorithm>
 #include "linkdiagram.hpp"
 
+//* For debug
+#include <iostream>
+
+#define DBG_MSG(x) std::cerr << __FILE__ << ":" << __LINE__ << std::endl << x << std::endl
+
+template<class T, class U>
+std::ostream& operator<<(std::ostream& os, std::pair<T,U> p) {
+    os << "(" << p.first << "," << p.second << ")";
+    return os;
+}
+// */
+
 using namespace khover;
+
+/************************************
+ *** Constants for bit operations ***
+ ************************************/
+template<std::size_t n>
+constexpr std::bitset<n> mask{~0lu};
+
+template<std::size_t n>
+constexpr std::size_t maskbits = std::min(
+    mask<n>.size(),
+    static_cast<std::size_t>(
+        std::numeric_limits<unsigned long long int>::digits));
 
 /*************************
  *** Utility functions ***
  *************************/
+
+//! Generate low-cut window
+template <std::size_t n>
+static inline
+std::bitset<n> low_window(std::size_t lbits)
+    noexcept
+{
+    return mask<n> >> (maskbits<n> - lbits);
+}
 
 //! Merge two components containing designated two arcs.
 //! \return The index of the component, if any, that was forgotten in merging.
@@ -76,6 +109,36 @@ int khover::LinkDiagram::cohDegree(state_t st) const noexcept
     return deg;
 }
 
+// Check if a state is adjacent to the other in Khovanov's smoothing cube.
+int LinkDiagram::stateCoeff(state_t st_before, state_t st_after)
+    const noexcept
+{
+    // Ignore higher bits.
+    st_before &= low_window<max_crosses>(m_cross.size());
+    st_after &= low_window<max_crosses>(m_cross.size());
+
+    // Check if they are adjacent with respect to the cohomological degrees.
+    if (st_after.count() - st_before.count() != 1)
+        return 0;
+
+    // Find different bits.
+    auto st_diff = st_after ^ st_before;
+
+    // If there are more than one differences, two states are not adjacent.
+    if (st_diff.count() != 1)
+        return 0;
+
+    // The parity of the number of smoothings that "break the orientaion."
+    bool sign = false;
+    for(std::size_t i = 0; i < m_cross.size() && !st_diff.test(i); ++i) {
+        sign ^=
+            (m_cross[i].is_positive && st_before.test(i))
+            || (!m_cross[i].is_positive && !st_before.test(i));
+    }
+
+    return sign ? -1 : 1;
+}
+
 // Compute the connected components in the smoothing of the diagram corresponding to a given state.
 std::vector<component_t>
 khover::LinkDiagram::smoothing(state_t st)
@@ -123,14 +186,8 @@ khover::LinkDiagram::smoothing(state_t st)
     }
 
     // re-labeling the components so that indices are consequtive.
-    constexpr decltype(index_rmed) mask{~0lu};
-    constexpr std::size_t nbits = std::min(
-        static_cast<std::size_t>(max_components),
-        static_cast<std::size_t>(
-            std::numeric_limits<unsigned long long int>::digits));
-
     for(auto& cind : result) {
-        cind -= (index_rmed & (mask >> (nbits-cind))).count();
+        cind -= (index_rmed & low_window<max_components>(cind)).count();
     }
 
     return result;
