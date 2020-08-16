@@ -80,35 +80,6 @@ merge_components(
  *** Implementation of class members ***
  ***************************************/
 
-// Compute the writhe of the link diagram.
-int khover::LinkDiagram::writhe() const noexcept
-{
-    int writhe = 0;
-    for (auto& c : m_cross) {
-        if(c.is_positive)
-            ++writhe;
-        else
-            --writhe;
-    }
-
-    return writhe;
-}
-
-// Compute the cohomological degrees of a given state in the convention of [CMW]
-int khover::LinkDiagram::cohDegree(state_t st) const noexcept
-{
-    int deg = 0;
-    for(std::size_t i = 0; i < m_cross.size(); ++i) {
-        if (m_cross[i].is_positive) {
-            if (st.test(i)) ++deg;
-        }
-        else {
-            if(!st.test(i)) --deg;
-        }
-    }
-    return deg;
-}
-
 // Check if a state is adjacent to the other in Khovanov's smoothing cube.
 int LinkDiagram::stateCoeff(state_t st_before, state_t st_after)
     const noexcept

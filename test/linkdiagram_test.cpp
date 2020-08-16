@@ -29,6 +29,18 @@ int main(int argc, char* argv[])
         return -1;
     }
 
+    if (six_two->nnegative() != 4) {
+        std::cerr << "Wrong number of negative crossings: "
+                  << six_two->nnegative() << " should be " << 4 << std::endl;
+        return -1;
+    }
+
+    if (six_two->npositive() != 2) {
+        std::cerr << "Wrong number of positive crossings: "
+                  << six_two->npositive() << " should be " << 2 << std::endl;
+        return -1;
+    }
+
     for(unsigned long s = 0; s < 0b1000000 ; ++s) {
         if(six_two->cohDegree(s) != static_cast<int>(std::bitset<6>(s).count()) - 4)
         {

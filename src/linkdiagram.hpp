@@ -12,6 +12,7 @@
 #include <bitset>
 #include <vector>
 #include <optional>
+#include <algorithm>
 
 #include "states.hpp"
 
@@ -42,6 +43,10 @@ private:
     std::size_t m_numarcs;
     std::vector<Crossing> m_cross;
 
+    // Be careful on the order of declarations.
+    std::size_t m_numpositive;
+    std::size_t m_numnegative;
+
 public:
     /*!
      * \name Constructors, Destructors, and assignment operators.
@@ -49,11 +54,21 @@ public:
     //\{
     //! This is the only chance to set the number of arcs (except copies).
     LinkDiagram(std::size_t numarcs, std::vector<Crossing> const& cross) noexcept
-        : m_numarcs(numarcs), m_cross(cross)
+        : m_numarcs(numarcs), m_cross(cross),
+          m_numpositive(
+              std::count_if(
+                  std::begin(cross), std::end(cross),
+                  [](auto const& crs) { return crs.is_positive; } )),
+          m_numnegative(cross.size() - m_numpositive)
     {}
 
     LinkDiagram(std::size_t numarcs, std::vector<Crossing>&& cross) noexcept
-        : m_numarcs(numarcs), m_cross(std::move(cross))
+        : m_numarcs(numarcs), m_cross(std::move(cross)),
+          m_numpositive(
+              std::count_if(
+                  std::begin(m_cross), std::end(m_cross),
+                  [](auto const& crs) { return crs.is_positive; } )),
+          m_numnegative(m_cross.size() - m_numpositive)
     {}
 
     ~LinkDiagram() = default;
@@ -85,8 +100,20 @@ public:
     std::size_t
     ncrosses() const noexcept { return m_cross.size(); }
 
-    //! Compute writhe
-    int writhe() const noexcept;
+    //! Get the number of negative crossings.
+    inline
+    std::size_t
+    nnegative() const noexcept { return m_numnegative; }
+
+    //! Get the number of positive crossings.
+    inline
+    std::size_t
+    npositive() const noexcept { return m_numpositive; }
+
+    //! Compute the writhe number
+    inline
+    int
+    writhe() const noexcept { return m_numpositive - m_numnegative; }
 
     //! Get the list of crossings.
     inline
@@ -101,7 +128,11 @@ public:
     //\{
     //! Compute the cohomological degrees of a given state in the convention of the following article:
     //! Clark, David; Morrison, Scott; Walker, Kevin. Fixing the functoriality of Khovanov homology. Geom. Topol. 13 (2009), no.3, 1499--1582. doi:10.2140/gt.2009.13.1499.
-    int cohDegree(state_t st) const noexcept;
+    inline
+    int
+    cohDegree(state_t st) const noexcept {
+        return static_cast<int>(st.count()) - static_cast<int>(m_numnegative);
+    }
 
     //! Check if a state is adjacent to the other in Khovanov's smoothing cube.
     //! \param st_before A state that should be of a lower cohomological degree.
