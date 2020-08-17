@@ -16,10 +16,8 @@
 #include "utils.hpp"
 #include "hnf_impl_lll.hpp"
 
-/* For debug
-#include <iostream>
-
-#define DBG_MSG(x) std::cerr << __FILE__ << ":" << __LINE__ << std::endl << x << std::endl
+//* For debug
+#include "debug/debug.hpp"
 // */
 
 namespace khover {
@@ -80,12 +78,12 @@ std::optional<std::size_t> hnf_LLL(
     std::size_t nvecs = Ops::dual_t::size(m);
 
     if (!foldl_tuple(true, us, [nvecs](bool b, auto& u) { return b && Ops::size(u) >= nvecs; })) {
-        DBG_MSG("Matricies U with invalid sizes.");
+        ERR_MSG("Matricies U with invalid sizes.");
         return std::nullopt;
     }
 
     if (!foldl_tuple(true, vs, [nvecs](bool b, auto& v) { return b && Ops::dual_t::size(v) >= nvecs; })) {
-        DBG_MSG("Matricies V with invalid sizes.");
+        ERR_MSG("Matricies V with invalid sizes.");
         return std::nullopt;
     }
 

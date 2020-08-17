@@ -3,21 +3,9 @@
 
 #include "abelian.hpp"
 
+#include "debug/debug.hpp"
+
 using namespace khover;
-
-template<class T>
-std::ostream& operator<<(std::ostream& os, std::vector<T> const& vec) {
-    if (vec.empty()) {
-        os << "{}";
-        return os;
-    }
-
-    os << "{" << vec.front();
-    for(auto itr = std::next(std::begin(vec)); itr != std::end(vec); ++itr)
-        os << ", " << *itr;
-    os << "}";
-    return os;
-}
 
 template <class T>
 bool has_same_span(
@@ -85,8 +73,7 @@ int main(int argc, char* argv[])
         if(auto res = a.compute(); res.first != 3
            || std::accumulate(
                res.second.begin(), res.second.end(), 1, std::multiplies<int64_t>{}) != 96) {
-            std::cerr << "Wrong abelian group!" << std::endl;
-            std::cerr << res << std::endl;
+            ERR_MSG("Wrong abelian group:" << std::endl << res);
             return -1;
         }
     }
@@ -122,11 +109,12 @@ int main(int argc, char* argv[])
                0, 0, 0, 0, 0, 1).finished();
 
         if(u != u_shouldbe || v*u != AbelianGroup::matrix_t::Identity(6,6)) {
-            std::cerr << "Wrong post-morphism transformation." << std::endl;
-            std::cerr << "Matrix u:" << std::endl
-                      << u << std::endl
-                      << "Shouldbe" << std::endl
-                      << u_shouldbe << std::endl;
+            ERR_MSG(
+                "Wrong post-morphism transformation." << std::endl
+                << "Matrix u:" << std::endl
+                << u << std::endl
+                << "Shouldbe" << std::endl
+                << u_shouldbe << std::endl);
             return -1;
         }
 
@@ -194,8 +182,7 @@ int main(int argc, char* argv[])
                std::multiplies<int64_t>{}) != 6) // 6 = 96/16
         {
             std::cout << u*coeffmat << std::endl;
-            std::cerr << "Wrong image." << std::endl;
-            std::cerr << im << std::endl;
+            ERR_MSG("Wrong image." << std::endl << im);
             return -1;
         }
     }

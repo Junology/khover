@@ -16,18 +16,6 @@
 #include "utils.hpp"
 #include "matrixops.hpp"
 
-//* For debug
-#include <iostream>
-
-#define DBG_MSG(x) std::cerr << __FILE__ << ":" << __LINE__ << std::endl << x << std::endl
-
-template<class T, class U>
-std::ostream& operator<<(std::ostream& os, std::pair<T,U> p) {
-    os << "(" << p.first << "," << p.second << ")";
-    return os;
-}
-// */
-
 
 namespace khover {
 

@@ -16,9 +16,8 @@
 
 #include "hnf.hpp"
 
-/* Debug
-#include <iostream>
-// */
+// Debug
+#include "debug/debug.hpp"
 
 namespace khover {
 
@@ -50,7 +49,7 @@ public:
                 m_repMat = m_repMat.leftCols(*rk).eval();
             }
             else {
-                DBG_MSG("Something bad happended.");
+                ERR_MSG("Something bad happended.");
             }
         }
     }

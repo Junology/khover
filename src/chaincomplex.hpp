@@ -71,7 +71,7 @@ public:
             return true;
         }
         else {
-            DBG_MSG(diff.rows() << "!=" << m_diffs.back().cols());
+            ERR_MSG(diff.rows() << "!=" << m_diffs.back().cols());
             return false;
         }
     }
@@ -85,7 +85,7 @@ public:
             return true;
         }
         else {
-            DBG_MSG(diff.rows() << "!=" << m_diffs.back().cols());
+            ERR_MSG(diff.rows() << "!=" << m_diffs.back().cols());
             return false;
         }
     }
@@ -100,7 +100,7 @@ public:
             return true;
         }
         else {
-            DBG_MSG(diff.rows() << "!=" << m_diffs.back().cols());
+            ERR_MSG(diff.rows() << "!=" << m_diffs.back().cols());
             return false;
         }
     }
@@ -115,7 +115,7 @@ public:
             return true;
         }
         else {
-            DBG_MSG(diff.rows() << "!=" << m_diffs.back().cols());
+            ERR_MSG(diff.rows() << "!=" << m_diffs.back().cols());
             return false;
         }
     }
@@ -137,7 +137,7 @@ public:
             auto rk = hnf_LLL<khover::colops>(
                 diff_mutable[i], std::tie(diff_mutable[i+1]), {});
             if (!rk) {
-                DBG_MSG("Something bad happended.");
+                ERR_MSG("Failed to decompose the chain complex.");
                 return {};
             }
             diff_mutable[i] = diff_mutable[i].leftCols(*rk).eval();
@@ -149,7 +149,7 @@ public:
         //! Compute the highest homology group.
         auto rk = hnf_LLL<khover::colops>(diff_mutable.back(), {}, {});
         if (!rk) {
-            DBG_MSG("Something bad happended.");
+            ERR_MSG("Failed to decompose the chain complex.");
             return {};
         }
 

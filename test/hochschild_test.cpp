@@ -2,6 +2,7 @@
 #include <map>
 
 #include "chaincomplex.hpp"
+#include "debug/debug.hpp"
 
 /*! \file hochschild_test.cpp
  * In this test, the program computes the Hochshild homology of the ring Z[x]/(x-1)^n.
@@ -16,21 +17,6 @@ using namespace khover;
 
 using matrix_t = Eigen::Matrix<int64_t,Eigen::Dynamic,Eigen::Dynamic>;
 using coeff_t = int64_t;
-
-//! Print vectors in streams
-template<class T>
-std::ostream& operator<<(std::ostream& os, std::vector<T> const& vec) {
-    if (vec.empty()) {
-        os << "{}";
-        return os;
-    }
-
-    os << "{" << vec.front();
-    for(auto itr = std::next(std::begin(vec)); itr != std::end(vec); ++itr)
-        os << ", " << *itr;
-    os << "}";
-    return os;
-}
 
 //! Miscellaneous functions
 template <class T>

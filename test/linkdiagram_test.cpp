@@ -191,5 +191,25 @@ int main(int argc, char* argv[])
             }
         }
     }
+    {
+        auto trefoil = read_gauss_code({1, -3, 2, -1, 3, -2}, {false});
+        if(auto comps = trefoil->smoothing(state_t{0b011});
+           comps.first != 1
+           || comps.second[0] != 0
+           || comps.second[1] != 0
+           || comps.second[2] != 0
+           || comps.second[3] != 0
+           || comps.second[4] != 0
+           || comps.second[5] != 0
+            )
+        {
+            std::cerr << "Wrong components:" << std::endl;
+            for(auto c : comps.second) {
+                std::cout << static_cast<int>(c) << "; ";
+            }
+            std::cout << std::endl;
+            return -1;
+        }
+    }
     return 0;
 }

@@ -14,38 +14,7 @@
 #include "linkdiagram.hpp"
 
 //* Debug
-#include <iostream>
-
-#define DBG_MSG(x) std::cerr << __FILE__ << ":" << __LINE__ << std::endl << x << std::endl
-
-template<class T, class U>
-std::ostream& operator<<(std::ostream& os, std::pair<T,U> p) {
-    os << "(" << p.first << "," << p.second << ")";
-    return os;
-}
-
-template<class T>
-std::ostream& operator<<(std::ostream& os, std::vector<T> const& vec) {
-    if (vec.empty()) {
-        os << "{}";
-        return os;
-    }
-
-    os << "{" << vec.front();
-    for(auto itr = std::next(std::begin(vec)); itr != std::end(vec); ++itr)
-        os << ", " << *itr;
-    os << "}";
-    return os;
-}
-
-template<class T, std::size_t n>
-std::ostream& operator<<(std::ostream& os, std::array<T,n> const& arr) {
-    os << "{" << arr[0];
-    for(std::size_t i = 1; i < n; ++i)
-        os << ", " << arr[i];
-    os << "}";
-    return os;
-}
+#include "debug/debug.hpp"
 // */
 
 using namespace khover;
@@ -305,9 +274,6 @@ khover::read_gauss_code(
         return std::nullopt;
     }
 
-    // DBG_MSG(gcode);
-    // DBG_MSG(gdual);
-
     auto outer = separate_vertices(numcrs, gdual);
     if(!outer) {
         std::cerr << "Failed to divide vertices." << std::endl;
@@ -408,7 +374,7 @@ khover::read_gauss_code(
             edge_map[crosses[v].adj_arc[1]].second);
 
         if (orditr_o == std::end(eord[v])) {
-            DBG_MSG(edge_map[crosses[v].adj_arc[1]] << " is not an arc.");
+            ERR_MSG(edge_map[crosses[v].adj_arc[1]] << " is not an arc.");
             return std::nullopt;
         }
 
@@ -418,7 +384,7 @@ khover::read_gauss_code(
             edge_map[crosses[v].adj_arc[3]].second);
 
         if (orditr_u == std::end(eord[v])) {
-            DBG_MSG(edge_map[crosses[v].adj_arc[3]] << " is not an arc.");
+            ERR_MSG(edge_map[crosses[v].adj_arc[3]] << " is not an arc.");
             return std::nullopt;
         }
 
