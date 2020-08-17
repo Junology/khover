@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 3.3.2)
 set(PROJECT_NAME "khover")
 project(${PROJECT_NAME})
 set(PROJECT_VERSION 0.0.1)
+set(PROJECT_URL "https://github.com/Junology/khover")
+set(PROJECT_BRIEF "Computing Khovanov homology and its first derivative.")
 
 set(PROJECT_TARGET_NAME ${PROJECT_NAME})
 

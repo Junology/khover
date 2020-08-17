@@ -3,6 +3,9 @@ cmake_minimum_required(VERSION 3.0)
 add_executable(
   ${PROJECT_NAME}
   main.cpp
+  gausscode.cpp
+  linkdiagram.cpp
+  khovanov.cpp
 )
 
 target_link_libraries(

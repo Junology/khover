@@ -1,7 +1,15 @@
 #pragma once
 
+#include <string_view>
+
 namespace appconf {
-    constexpr char const name[] = u8"@PROJECT_NAME@";
-    constexpr char const version[] = u8"@PROJECT_VERSION@";
-    constexpr char const fullname[] = u8R"(@PROJECT_NAME@ @PROJECT_VERSION@)";
+
+using namespace std::string_view_literals;
+
+inline constexpr std::string_view name = u8"@PROJECT_NAME@"sv;
+inline constexpr std::string_view version = u8"@PROJECT_VERSION@"sv;
+inline constexpr std::string_view fullname = u8R"(@PROJECT_NAME@ @PROJECT_VERSION@)"sv;
+inline constexpr std::string_view url = u8R"(@PROJECT_URL@)"sv;
+inline constexpr std::string_view brief = u8R"(@PROJECT_BRIEF@)"sv;
+
 }
