@@ -70,8 +70,24 @@ public:
             m_diffs.push_back(diff);
             return true;
         }
-        else
+        else {
+            DBG_MSG(diff.rows() << "!=" << m_diffs.back().cols());
             return false;
+        }
+    }
+
+    //! Append a differential at the highest (homological) degree.
+    //! Composability check is performed (if failed, the function does nothing).
+    template<class Derived>
+    bool prepend(Eigen::MatrixBase<Derived> && diff) noexcept {
+        if (diff.rows() == m_diffs.back().cols()) {
+            m_diffs.push_back(std::move(diff));
+            return true;
+        }
+        else {
+            DBG_MSG(diff.rows() << "!=" << m_diffs.back().cols());
+            return false;
+        }
     }
 
     //! Append a differential at the lowerst (homological) degree
@@ -83,8 +99,25 @@ public:
             --m_mindeg;
             return true;
         }
-        else
+        else {
+            DBG_MSG(diff.rows() << "!=" << m_diffs.back().cols());
             return false;
+        }
+    }
+
+    //! Append a differential at the lowerst (homological) degree
+    //! Composability check is performed (if failed, the function does nothing).
+    template<class Derived>
+    bool append(Eigen::MatrixBase<Derived> && diff) noexcept {
+        if (diff.cols() == m_diffs.front().rows()) {
+            m_diffs.push_front(std::move(diff));
+            --m_mindeg;
+            return true;
+        }
+        else {
+            DBG_MSG(diff.rows() << "!=" << m_diffs.back().cols());
+            return false;
+        }
     }
 
     /*!
@@ -123,7 +156,7 @@ public:
         result.emplace_back(diff_mutable.back(), std::true_type{});
         result.emplace_back(
             matrix_t(0,0), std::true_type{},
-            static_cast<std::size_t>(diff_mutable.back().rows()) - *rk);
+            static_cast<std::size_t>(diff_mutable.back().cols()) - *rk);
 
         return result;
     }

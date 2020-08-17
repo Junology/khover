@@ -35,6 +35,12 @@ khover_test(
   )
 
 khover_test(
+  chaincomplex_test
+  ""
+  Eigen3::Eigen
+  )
+
+khover_test(
   hochschild_test
   ""
   Eigen3::Eigen
@@ -57,3 +63,4 @@ khover_test(
   "${CMAKE_SOURCE_DIR}/src/gausscode.cpp;${CMAKE_SOURCE_DIR}/src/linkdiagram.cpp"
   Eigen3::Eigen
   )
+
