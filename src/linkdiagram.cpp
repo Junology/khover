@@ -23,30 +23,10 @@ std::ostream& operator<<(std::ostream& os, std::pair<T,U> p) {
 
 using namespace khover;
 
-/************************************
- *** Constants for bit operations ***
- ************************************/
-template<std::size_t n>
-constexpr std::bitset<n> mask{~0lu};
-
-template<std::size_t n>
-constexpr std::size_t maskbits = std::min(
-    mask<n>.size(),
-    static_cast<std::size_t>(
-        std::numeric_limits<unsigned long long int>::digits));
 
 /*************************
  *** Utility functions ***
  *************************/
-
-//! Generate low-cut window
-template <std::size_t n>
-static inline
-std::bitset<n> low_window(std::size_t lbits)
-    noexcept
-{
-    return mask<n> >> (maskbits<n> - lbits);
-}
 
 //! Merge two components containing designated two arcs.
 //! \return The index of the component, if any, that was forgotten in merging.

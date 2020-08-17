@@ -34,9 +34,34 @@ using component_t = std::uint8_t;
 using enhancement_t = std::bitset<max_components>;
 
 
+/************************************
+ *** Constants for bit operations ***
+ ************************************/
+template<std::size_t n>
+inline constexpr
+std::bitset<n> mask{~0lu};
+
+template<std::size_t n>
+inline constexpr
+std::size_t maskbits = std::min(
+    mask<n>.size(),
+    static_cast<std::size_t>(
+        std::numeric_limits<unsigned long long int>::digits));
+
+
 /*****************
  *** Functions ***
  *****************/
+
+//! Generate low-cut window
+template <std::size_t n>
+static inline
+std::bitset<n> low_window(std::size_t lbits)
+    noexcept
+{
+    return mask<n> >> (maskbits<n> - lbits);
+}
+
 //! Enumerate all the bitsets with constant pop-counts.
 template<std::size_t n>
 std::bitset<n>
