@@ -132,7 +132,7 @@ int main(int argc, char* argv[])
     std::cout << "Free rank: " << h0.first << std::endl;
     std::cout << "Torsions: " << h0.second << std::endl;
     if (h0.first != 3 || !h0.second.empty() != 0) {
-        std::cerr << "Unexpected 0th homology" << std::endl;
+        ERR_MSG("Wrong 0th homology");
         return -1;
     }
 
@@ -142,7 +142,7 @@ int main(int argc, char* argv[])
     std::cout << "Free rank: " << h1.first << std::endl;
     std::cout << "Torsions: " << h1.second << std::endl;
     if (h1.first != 2 || h1.second.size() != 1 || h1.second[0] != n) {
-        std::cerr << "Unexpected 1st homology" << std::endl;
+        ERR_MSG("Wrong 1st homology");
         return -1;
     }
 
@@ -152,17 +152,17 @@ int main(int argc, char* argv[])
     std::cout << "Free rank: " << h2.first << std::endl;
     std::cout << "Torsions: " << h2.second << std::endl;
     if (h2.first != 2 || !h2.second.empty()) {
-        std::cerr << "Unexpected 2nd homology" << std::endl;
+        ERR_MSG("Wrong 2nd homology");
         return -1;
     }
 
     std::cout << "---" << std::endl;
-    std::cout << "Computing H_1..." << std::endl;
+    std::cout << "Computing H_3..." << std::endl;
     auto h3 = h[3].compute();
     std::cout << "Free rank: " << h3.first << std::endl;
     std::cout << "Torsions: " << h3.second << std::endl;
     if (h3.first != 2 || h3.second.size() != 1 || h3.second[0] != n) {
-        std::cerr << "Unexpected 0th homology" << std::endl;
+        ERR_MSG("Wrong 3rd homology");
         return -1;
     }
 

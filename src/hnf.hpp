@@ -87,14 +87,14 @@ std::optional<std::size_t> hnf_LLL(
         return std::nullopt;
     }
 
-    // Do nothing on empty matrices
+    // Nothing to do on empty matrices
     if (nvecs == 0 || Ops::size(m) == 0) {
         return std::make_optional(0);
     }
 
-    // Ensure the pivot of the first vector to be non-negative.
+    // Ensure the pivot of the last vector to be non-negative.
     std::size_t l = Ops::find_nonzero(
-        m, 0,
+        m, nvecs-1,
         [&m,&us,&vs](std::size_t l, auto x) {
             if (std::signbit(x)) {
                 Ops::scalar(m,0,-1);
@@ -105,40 +105,55 @@ std::optional<std::size_t> hnf_LLL(
 
     // If the given matrix consists of a single vector, then all the step is finished.
     if (nvecs == 1) {
-        return std::make_optional(l < Ops::dual_t::size(m) ? 1 : 0);
+        return l < Ops::size(m) ? 1 : 0;
     }
 
-    _impl_LLL::Lambda_t lambda(nvecs+1);
+    _impl_LLL::Lambda_t lambda(nvecs);
 
     // The index of the vector that we currently focus on.
-    std::size_t cur = 1;
-    // The number of zero vectors above cursor.
-    // Hence, nzero <= cur must always hold.
-    std::size_t nzero = l < Ops::size(m) ? 0 : 1;
+    std::size_t cur = nvecs - 1;
+    // The rank of the span of vectors below cursor.
+    std::size_t rk = 0;
+    // Flag whether the vector just below the cursor is non-zero or not.
+    bool is_below_nz = false;
 
     // Proceed the algorithm on the first k rows.
-    while (cur < nvecs) {
-        auto howswap = _impl_LLL::reduce<Ops,false>(cur, cur-1, m, us, vs, lambda);
+    while (cur > 0) {
+        //DBG_MSG("cur=" << cur << "\n" << "rk = " << rk << "\n" << m);
+
+        auto howswap = _impl_LLL::reduce<Ops,false>(cur-1, cur, m, us, vs, lambda);
+
         if (howswap & _impl_LLL::HowSwap::ShouldSwap) {
-            _impl_LLL::swap<Ops>(cur, m, us, vs, lambda);
-            if (cur > 1) {
-                --nzero;
-                --cur;
+            _impl_LLL::swap<Ops>(cur-1, m, us, vs, lambda);
+            if (cur+1 < nvecs) {
+                ++cur;
+                if (is_below_nz) {
+                    --rk;
+                    is_below_nz = rk > 0;
+                }
             }
         }
         else if (howswap & _impl_LLL::HowSwap::ZeroReducer) {
-            ++nzero;
-            ++cur;
+            --cur;
+            is_below_nz = false;
         }
         else {
-            for (std::size_t i = 2; i <= cur; ++i)
-                _impl_LLL::reduce<Ops,true>(cur, cur-i, m, us, vs, lambda);
-            ++cur;
-            nzero = 0;
+            for (std::size_t i = cur+1; i < nvecs; ++i)
+                _impl_LLL::reduce<Ops,true>(cur-1, i, m, us, vs, lambda);
+            --cur;
+            ++rk;
+            is_below_nz = true;
         }
     }
 
-    return std::make_optional(Ops::dual_t::size(m) - nzero);
+    if (rk > 0) {
+        return rk+1;
+    }
+    else {
+        return Ops::find_nonzero(m, 0, [](auto,auto){})
+            < Ops::size(m)
+              ? 1 : 0;
+    }
 }
 
 }

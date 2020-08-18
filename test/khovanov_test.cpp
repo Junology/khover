@@ -75,7 +75,9 @@ int main (int argc, char* argv[])
                 ERR_MSG(
                     "Incorrect -2nd cohomology groups: (deg,qdeg)=("
                     << -ch->mindeg()-3 << "," << q
-                    << ")");
+                    << ")\n"
+                    << h3
+                    );
                 return -1;
             }
             if(auto h4 = h[4].compute();

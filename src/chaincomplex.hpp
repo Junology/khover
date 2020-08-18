@@ -57,10 +57,18 @@ public:
     {}
 
     //! The length of the complex.
-    inline std::size_t length() noexcept { return m_diffs.size() + 1; }
+    inline std::size_t length() const noexcept { return m_diffs.size() + 1; }
 
-    inline int mindeg() noexcept { return m_mindeg; }
-    inline int maxdeg() noexcept { return m_mindeg + m_diffs.size(); }
+    inline int mindeg() const noexcept { return m_mindeg; }
+    inline int maxdeg() const noexcept { return m_mindeg + m_diffs.size(); }
+
+    // Get differential as a matri.
+    matrix_t const* getDiff(int i) const noexcept {
+        if (i-m_mindeg < 0 || i-m_mindeg >= static_cast<int>(m_diffs.size()))
+            return nullptr;
+        else
+            return &(m_diffs[i-m_mindeg]);
+    }
 
     //! Append a differential at the highest (homological) degree.
     //! Composability check is performed (if failed, the function does nothing).
@@ -129,7 +137,7 @@ public:
      *   // -> H_n(C) = result[n+C.mindeg()];
      * \endcode
      */
-    std::vector<homology_t> compute() {
+    std::vector<homology_t> compute() const noexcept {
         std::vector<matrix_t> diff_mutable(m_diffs.begin(), m_diffs.end());
         std::vector<homology_t> result{};
 
@@ -140,6 +148,7 @@ public:
                 ERR_MSG("Failed to decompose the chain complex.");
                 return {};
             }
+
             diff_mutable[i] = diff_mutable[i].leftCols(*rk).eval();
             diff_mutable[i+1] = diff_mutable[i+1].bottomRows(
                 diff_mutable[i+1].rows() - *rk).eval();

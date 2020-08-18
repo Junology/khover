@@ -16,8 +16,9 @@
 
 #include "hnf.hpp"
 
-// Debug
+//* Debug
 #include "debug/debug.hpp"
+//*/
 
 namespace khover {
 

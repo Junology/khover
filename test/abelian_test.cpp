@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
            || a.nrels() != 1
            || a.get_repmatrix() != shouldbe)
         {
-            std::cout << a.get_repmatrix() << std::endl;
+            ERR_MSG(a.ngens() << "x" << a.nrels() << "\n" << a.get_repmatrix());
             return -1;
         }
     }
@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
            || a.nrels() != 2
            || a.get_repmatrix() != shouldbe)
         {
-            std::cout << a.get_repmatrix() << std::endl;
+            ERR_MSG(a.get_repmatrix());
             return -1;
         }
     }
@@ -99,16 +99,17 @@ int main(int argc, char* argv[])
         a.reduce(std::tie(u), std::tie(v));
 
         auto u_shouldbe
-            = (decltype(u)(u.rows(), u.cols())
-               << 4, 0, -1, 0, 0, 0,
-               0, 0, 0, 0, 0, 0,
-               1, 6, -5, -2, 0, 0,
-               3, 3, -3, -1, 0, 0,
-               2, 2, -2, -1, 0, 0,
-               0, 0, 0, 0, 1, 0,
-               0, 0, 0, 0, 0, 1).finished();
+            = (decltype(u)(u.rows(), 3) <<
+               4, 0,-1,
+               0, 0, 0,
+               1, 6,-5,
+               3, 3,-3,
+               2, 2,-2,
+               0, 0, 0,
+               0, 0, 0).finished();
 
-        if(u != u_shouldbe || v*u != AbelianGroup::matrix_t::Identity(6,6)) {
+        if(u.leftCols(3) != u_shouldbe
+           || v*u != AbelianGroup::matrix_t::Identity(6,6)) {
             ERR_MSG(
                 "Wrong post-morphism transformation." << std::endl
                 << "Matrix u:" << std::endl
