@@ -10,7 +10,8 @@ int main (int argc, char* argv[])
 {
     // Trefoil knot
     {
-        auto trefoil = read_gauss_code({1, -3, 2, -1, 3, -2}, {false});
+        auto trefoil = read_gauss_code(
+            {1, -3, 2, -1, 3, -2}, {std::make_pair(1,false)});
 
         for(int q = -9; q < 0 ; ++q) {
             auto ch = khover::khChain(*trefoil, q);

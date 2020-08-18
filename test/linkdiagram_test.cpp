@@ -22,7 +22,8 @@ std::ostream& operator<<(std::ostream& os, std::vector<T> const& vec) {
 int main(int argc, char* argv[])
 {
     auto six_two = read_gauss_code(
-        {1,-2, 5,-6, 3,-1, 2,-4, 6,-5, 4,-3}, {false});
+        {1,-2, 5,-6, 3,-1, 2,-4, 6,-5, 4,-3},
+        {std::make_pair(1,false)});
 
     if(!six_two) {
         std::cerr << "Failed to load a knot." << std::endl;
@@ -192,7 +193,8 @@ int main(int argc, char* argv[])
         }
     }
     {
-        auto trefoil = read_gauss_code({1, -3, 2, -1, 3, -2}, {false});
+        auto trefoil = read_gauss_code(
+            {1, -3, 2, -1, 3, -2}, {std::make_pair(1,false)});
         if(auto comps = trefoil->smoothing(state_t{0b011});
            comps.first != 1
            || comps.second[0] != 0

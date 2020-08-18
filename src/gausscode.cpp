@@ -258,7 +258,7 @@ separate_vertices(std::size_t numcrs, gcode_t const& gdual)
 std::optional<LinkDiagram>
 khover::read_gauss_code(
     gcode_t const& gcode,
-    std::vector<bool> const& signs
+    std::vector<std::pair<std::size_t,bool>> const& signs
     ) noexcept
 {
     // Estimate the number of crossings.
@@ -395,24 +395,29 @@ khover::read_gauss_code(
     // Take mirrors so that required signs are satisfied.
     // This step breaks gdual.
     auto disjcomps = divide_gcode(gdual);
-    for(std::size_t i = 0; i < std::min(disjcomps.size(), signs.size()); ++i) {
-        int minv = numcrs;
-        std::for_each(
-            std::begin(disjcomps[i]), std::end(disjcomps[i]),
-            [&minv](int& n) {
-                if (n<0) n = -n;
-                if (n < minv) minv = n;
-            });
+    for(auto &sign : signs) {
+        // Find the disjoint component containing the crossing in the sign request.
+        auto compitr = std::find_if(
+            std::begin(disjcomps), std::end(disjcomps),
+            [&sign](gcode_t const& disjcomp) {
+                for(auto c : disjcomp)
+                    if (static_cast<std::size_t>(std::abs(c)) == sign.first)
+                        return true;
+                return false;
+            } );
 
-        // If the signs are different, invert the crossings.
-        if(crosses[minv-1].is_positive != signs[i]) {
-            // Remove duplicates
-            std::sort(std::begin(disjcomps[i]), std::end(disjcomps[i]));
-            auto lastitr = std::unique(
-                std::begin(disjcomps[i]), std::end(disjcomps[i]));
-            for(auto itr = std::begin(disjcomps[i]); itr != lastitr; ++itr) {
-                crosses[(*itr)-1].is_positive ^= true;
-            }
+        // Component not found, or the current diagram already has the sign, skip that request.
+        if (compitr == std::end(disjcomps)
+            || crosses[sign.first-1].is_positive == sign.second)
+            continue;
+
+        // Remove duplicates in the disjoint component.
+        std::sort(std::begin(*compitr), std::end(*compitr));
+        auto lastitr = std::unique(
+            std::begin(*compitr), std::end(*compitr));
+        // Take the mirror image of the component.
+        for(auto itr = std::begin(*compitr); itr != lastitr; ++itr) {
+            crosses[std::abs(*itr)-1].is_positive ^= true;
         }
     }
 

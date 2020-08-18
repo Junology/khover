@@ -157,11 +157,11 @@ using gcode_t = std::vector<int>;
  * Read a Gauss code.
  * One can pass a multi-component code by separating codes with '0'.
  * \param gcode A Gauss code to process.
- * \param signs A list of signs of the crossings with the minimum indices in *disjoint* components, where disjoint means they are disjoint in the 2d-plane (not in the 3d-space). Hence, only one entry suffices in usual cases.
+ * \param signs A list of pairs of crossings and requested signs on them. If one contradicts to another, the latter request will be applied. If a given crossing is out-of-range, then the pair is just ignored.
  */
 std::optional<LinkDiagram> read_gauss_code(
     gcode_t const& gcode,
-    std::vector<bool> const& signs
+    std::vector<std::pair<std::size_t,bool>> const& signs
     ) noexcept;
 
 } // end namespace khover

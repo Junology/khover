@@ -9,7 +9,8 @@ int main(int argc, char* argv[])
     // Trefoil.
     {
         std::cout << "trefoil:" << std::endl;
-        auto trefoil = read_gauss_code({1, -3, 2, -1, 3, -2}, {false});
+        auto trefoil = read_gauss_code(
+            {1, -3, 2, -1, 3, -2}, {std::make_pair(1,false)});
 
         if (!trefoil
             || trefoil->ncrosses() != 3
@@ -42,7 +43,8 @@ int main(int argc, char* argv[])
     {
         std::cout << "6_2:" << std::endl;
         auto six_two = read_gauss_code(
-            {1,-2, 5,-6, 3,-1, 2,-4, 6,-5, 4,-3}, {false});
+            {1,-2, 5,-6, 3,-1, 2,-4, 6,-5, 4,-3},
+            {std::make_pair(1,false)});
 
         if(!six_two
            || six_two->narcs() != 12
@@ -78,7 +80,7 @@ int main(int argc, char* argv[])
            || six_two->crosses()[5].adj_arc[2] != 2
            || six_two->crosses()[5].adj_arc[3] != 3
             ) {
-            std::cerr << "Failed to load trefoil." << std::endl;
+            std::cerr << "Failed to load 6_2." << std::endl;
             return -1;
         }
 
@@ -89,7 +91,8 @@ int main(int argc, char* argv[])
     {
         std::cout << "6_2 (mirror):" << std::endl;
         auto six_two = read_gauss_code(
-            {1,-2, 5,-6, 3,-1, 2,-4, 6,-5, 4,-3}, {true});
+            {1,-2, 5,-6, 3,-1, 2,-4, 6,-5, 4,-3},
+            {std::make_pair(1,true)});
 
         if(!six_two
            || six_two->narcs() != 12
@@ -125,7 +128,55 @@ int main(int argc, char* argv[])
            || six_two->crosses()[5].adj_arc[2] != 2
            || six_two->crosses()[5].adj_arc[3] != 3
             ) {
-            std::cerr << "Failed to load trefoil." << std::endl;
+            std::cerr << "Failed to load 6_2 (mirror)." << std::endl;
+            return -1;
+        }
+
+        std::cout << "Pass" << std::endl;
+    }
+
+    // 6_2 (mirror)
+    {
+        std::cout << "6_2 (mirror):" << std::endl;
+        auto six_two = read_gauss_code(
+            {1,-2, 5,-6, 3,-1, 2,-4, 6,-5, 4,-3},
+            {std::make_pair(5,false)});
+
+        if(!six_two
+           || six_two->narcs() != 12
+           || six_two->ncrosses() != 6
+           || six_two->crosses()[0].is_positive != true
+           || six_two->crosses()[0].adj_arc[0] != 11
+           || six_two->crosses()[0].adj_arc[1] != 0
+           || six_two->crosses()[0].adj_arc[2] != 4
+           || six_two->crosses()[0].adj_arc[3] != 5
+           || six_two->crosses()[1].is_positive != true
+           || six_two->crosses()[1].adj_arc[0] != 5
+           || six_two->crosses()[1].adj_arc[1] != 6
+           || six_two->crosses()[1].adj_arc[2] != 0
+           || six_two->crosses()[1].adj_arc[3] != 1
+           || six_two->crosses()[2].is_positive != true
+           || six_two->crosses()[2].adj_arc[0] != 3
+           || six_two->crosses()[2].adj_arc[1] != 4
+           || six_two->crosses()[2].adj_arc[2] != 10
+           || six_two->crosses()[2].adj_arc[3] != 11
+           || six_two->crosses()[3].is_positive != true
+           || six_two->crosses()[3].adj_arc[0] != 9
+           || six_two->crosses()[3].adj_arc[1] != 10
+           || six_two->crosses()[3].adj_arc[2] != 6
+           || six_two->crosses()[3].adj_arc[3] != 7
+           || six_two->crosses()[4].is_positive != false
+           || six_two->crosses()[4].adj_arc[0] != 1
+           || six_two->crosses()[4].adj_arc[1] != 2
+           || six_two->crosses()[4].adj_arc[2] != 8
+           || six_two->crosses()[4].adj_arc[3] != 9
+           || six_two->crosses()[5].is_positive != false
+           || six_two->crosses()[5].adj_arc[0] != 7
+           || six_two->crosses()[5].adj_arc[1] != 8
+           || six_two->crosses()[5].adj_arc[2] != 2
+           || six_two->crosses()[5].adj_arc[3] != 3
+            ) {
+            std::cerr << "Failed to load 6_2 (mirror)." << std::endl;
             return -1;
         }
 
@@ -137,7 +188,7 @@ int main(int argc, char* argv[])
         std::cout << "Borromean ring (L6a4):" << std::endl;
         auto borromean = read_gauss_code(
             {1,-2, 3,-4, 0,-1, 5,-3, 6, 0, 2,-5, 4,-6},
-            {false});
+            {std::make_pair(1,false)});
 
         if(!borromean
            || borromean->narcs() != 12
@@ -173,7 +224,7 @@ int main(int argc, char* argv[])
            || borromean->crosses()[5].adj_arc[2] != 10
            || borromean->crosses()[5].adj_arc[3] != 11
             ) {
-            std::cerr << "Failed to load trefoil." << std::endl;
+            std::cerr << "Failed to load Borromean ring." << std::endl;
             return -1;
         }
 
