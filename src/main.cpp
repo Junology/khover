@@ -8,14 +8,33 @@
 #include <string_view>
 
 #include "config.hpp"
+#include "linkdiagram.hpp"
+#include "khovanov.hpp"
 
+#include "debug/debug.hpp"
+
+using namespace khover;
+/*************************************
+ *** Command line option processor ***
+ *************************************/
+/*!
+ * A simple class to manipulate commandline arguments.
+ */
 class CommandOpts {
 public:
+    enum ProcessResult : unsigned int {
+        Pass = 0b00,
+        Error = 0b01,
+        Terminate = 0b10,
+        TerminateSuccess = Terminate | Pass,
+        TerminateError = Terminate | Error,
+    };
+
     struct Command
     {
         std::string description;
         bool take_parameter;
-        std::function<void(std::string_view const&)> func;
+        std::function<ProcessResult(std::string_view const&)> func;
     };
 
 private:
@@ -26,10 +45,16 @@ public:
     CommandOpts() {
         cmds.emplace(
             'h',
-            Command{"Show help.", false, [this](auto) { this->showHelp(); }}
-            );
+            Command{
+                "Show help.", false,
+                [this](auto) -> ProcessResult {
+                    this->showHelp();
+                    return TerminateSuccess;
+                }
+            });
         lsmapper.emplace("help", 'h');
     }
+
     void addOpt(
         char sname,
         std::string lname,
@@ -43,7 +68,8 @@ public:
             Command{
                 description,
                 take_parameter,
-                std::move(func)});
+                std::move(func)
+            });
         lsmapper.emplace(lname, sname);
     }
 
@@ -71,7 +97,7 @@ public:
     std::pair<bool,std::vector<std::string_view>>
     process(int argc, char** argv) {
         std::vector<std::string_view> args(argv, argv+argc);
-        bool done_something = false;
+        bool terminated = false;
 
         for(auto itr = std::next(std::begin(args)); itr != std::end(args);) {
             if(itr->size() <= 1 || (*itr)[0] != '-') {
@@ -81,9 +107,12 @@ public:
 
             if(std::isalnum((*itr)[1])) {
                 if(auto cmd = cmds.find((*itr)[1]); cmd != std::end(cmds)) {
-                    cmd->second.func(itr->substr(2));
+                    terminated = cmd->second.func(itr->substr(2));
                     itr = args.erase(itr);
-                    done_something = true;
+
+                    if(terminated)
+                        return std::make_pair(true, std::move(args));
+
                     continue;
                 }
             }
@@ -94,14 +123,16 @@ public:
                     if(cmds[name->second].take_parameter
                        && std::next(itr) != std::end(args))
                     {
-                        cmds[name->second].func(*std::next(itr));
+                        terminated = cmds[name->second].func(*std::next(itr));
                         itr = args.erase(itr, std::next(itr,2));
                     }
                     else {
-                        cmds[name->second].func("");
+                        terminated = cmds[name->second].func("");
                         itr = args.erase(itr);
                     }
-                    done_something = true;
+
+                    if(terminated)
+                        return std::make_pair(true, std::move(args));
                     continue;
                 }
             }
@@ -109,10 +140,35 @@ public:
             ++itr;
         }
 
-        return std::make_pair(done_something,std::move(args));
+        return std::make_pair(false,std::move(args));
     }
 };
 
+
+/*************************
+ *** Utility functions ***
+ *************************/
+std::vector<int> read_vector(
+    std::string_view const& strview, char delim)
+    noexcept(false)
+{
+    using size_type = std::string_view::size_type;
+
+    std::vector<int> result{};
+    size_type beg = 0, len;
+
+    do {
+        len = strview.substr(beg).find(delim);
+        result.push_back(std::stoi(std::string(strview.substr(beg,len))));
+        beg += len+1;
+    } while(len != std::string_view::npos);
+
+    return result;
+}
+
+/*********************
+ *** Main function ***
+ *********************/
 int main(int argc, char* argv[])
 {
     enum class AppMode {
@@ -120,18 +176,60 @@ int main(int argc, char* argv[])
         Crux,
         Derivative,
         CruxImage,
-        Misc
     };
 
-    AppMode mode = AppMode::Misc;
+    AppMode mode = AppMode::Khovanov;
     int target_crossing = -1;
+    std::vector<std::pair<std::size_t,bool>> is_positive_specifiers;
 
     CommandOpts opts;
 
     opts.addOpt(
         'v', "version", "Show version.", false,
-        [](auto) { std::cout << appconf::version << std::endl; }
-        );
+        [](auto) {
+            std::cout << appconf::version << std::endl;
+            return CommandOpts::TerminateSuccess;
+        });
+    opts.addOpt(
+        'p', "positive",
+        "The crossing <ARG> becomes positive. If several -p and -n options are supplied, the latter one has higher priority.",
+        true,
+        [&is_positive_specifiers](std::string_view const& str) {
+            try {
+                std::size_t c = static_cast<std::size_t>(
+                    std::abs(std::stoi(std::string(str))));
+                is_positive_specifiers.emplace_back(c, true);
+                return CommandOpts::Pass;
+            }
+            catch(std::invalid_argument const& err) {
+                std::cerr << "ERROR: Invalid argument." << std::endl;
+                return CommandOpts::TerminateError;
+            }
+            catch(std::out_of_range const& err) {
+                std::cerr << "ERROR: Out of range." << std::endl;
+                return CommandOpts::TerminateError;
+            }
+        });
+    opts.addOpt(
+        'n', "negative",
+        "The crossing <ARG> becomes negative. If several -p and -n options are supplied, the latter one has higher priority.",
+        true,
+        [&is_positive_specifiers](std::string_view const& str) {
+            try {
+                std::size_t c = static_cast<std::size_t>(
+                    std::abs(std::stoi(std::string(str))));
+                is_positive_specifiers.emplace_back(c, false);
+                return CommandOpts::Pass;
+            }
+            catch(std::invalid_argument const& err) {
+                std::cerr << "ERROR: Invalid argument." << std::endl;
+                return CommandOpts::TerminateError;
+            }
+            catch(std::out_of_range const& err) {
+                std::cerr << "ERROR: Out of range." << std::endl;
+                return CommandOpts::TerminateError;
+            }
+        });
     opts.addOpt(
         'c', "crux",
         "Compute the crux complex at the crossing <ARG>.",
@@ -140,12 +238,15 @@ int main(int argc, char* argv[])
             try {
                 mode = AppMode::Crux;
                 target_crossing = std::stoi(std::string(str));
+                return CommandOpts::Pass;
             }
             catch(std::invalid_argument const& err) {
-                std::cerr << "Invalid argument." << std::endl;
+                std::cerr << "ERROR: Invalid argument." << std::endl;
+                return CommandOpts::TerminateError;
             }
             catch(std::out_of_range const& err) {
-                std::cerr << "Out of range." << std::endl;
+                std::cerr << "ERROR: Out of range." << std::endl;
+                return CommandOpts::TerminateError;
             }
         } );
     opts.addOpt(
@@ -156,12 +257,15 @@ int main(int argc, char* argv[])
             try {
                 mode = AppMode::Derivative;
                 target_crossing = std::stoi(std::string(str));
+                return CommandOpts::Pass;
             }
             catch(std::invalid_argument const& err) {
-                std::cerr << "Invalid argument." << std::endl;
+                std::cerr << "ERROR: Invalid argument." << std::endl;
+                return CommandOpts::TerminateError;
             }
             catch(std::out_of_range const& err) {
-                std::cerr << "Out of range." << std::endl;
+                std::cerr << "ERROR: Out of range." << std::endl;
+                return CommandOpts::TerminateError;
             }
         } );
     opts.addOpt(
@@ -172,21 +276,26 @@ int main(int argc, char* argv[])
             try {
                 mode = AppMode::CruxImage;
                 target_crossing = std::stoi(std::string(str));
+                return CommandOpts::Pass;
             }
             catch(std::invalid_argument const& err) {
-                std::cerr << "Invalid argument." << std::endl;
+                std::cerr << "ERROR: Invalid argument." << std::endl;
+                return CommandOpts::TerminateError;
             }
             catch(std::out_of_range const& err) {
-                std::cerr << "Out of range." << std::endl;
+                std::cerr << "ERROR: Out of range." << std::endl;
+                return CommandOpts::TerminateError;
             }
         } );
-    auto [done,args] = opts.process(argc, argv);
 
-    // help/version are shown.
-    if(done && mode == AppMode::Misc) {
-        return 0;
+    auto [procres,args] = opts.process(argc, argv);
+
+    // Check if command line argument processor was terminated.
+    if(procres & CommandOpts::Terminate) {
+        return (procres & CommandOpts::Error) ? EXIT_FAILURE : EXIT_SUCCESS;
     }
 
+    // Find a Gauss code in command line arguments.
     auto code_itr = std::find_if(
         std::next(std::begin(args)), std::end(args),
         [](std::string_view const& arg) {
@@ -202,13 +311,54 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    // If no option is given, enter the Khovanov homology mode.
-    if(!done)
-        mode = AppMode::Khovanov;
+    // Remove brackets '[' and ']' from the Gauss code.
+    code_itr->remove_prefix(1);
+    code_itr->remove_suffix(1);
+
+    // Read Gauss code
+    std::optional<LinkDiagram> diagram;
+    try {
+        auto gcode = read_vector(*code_itr, ',');
+        diagram = read_gauss_code(gcode, is_positive_specifiers);
+        if (!diagram)
+            throw std::invalid_argument("Invalid Gauss code");
+    }
+    catch(std::invalid_argument const& err) {
+        std::cerr << "ERROR: Invalid Gauss code." << std::endl;
+        return EXIT_FAILURE;
+    }
+    catch(std::out_of_range const& err) {
+        std::cerr << "ERROR: Index out of range." << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    DBG_MSG("Diagram successfully loaded.");
 
     switch(mode) {
-    case AppMode::Khovanov:
-        std::cout << "Computation of Khovanov homology is WIP." << std::endl;
+    case AppMode::Khovanov: {
+        int qmin =
+            - static_cast<int>(diagram->smoothing(0u).first)
+            - static_cast<int>(diagram->nnegative())
+            + diagram->writhe();
+        int qmax =
+            static_cast<int>(diagram->smoothing(~state_t(0u)).first)
+            + static_cast<int>(diagram->npositive())
+            + diagram->writhe();
+        for(int q = qmin; q <= qmax; q+=2) {
+            auto ch = khChain(*diagram, q);
+            if(!ch)
+                continue;
+            std::cout << "q-degree: " << q << std::endl;
+            for(auto h : ch->compute()) {
+                auto [freerk, tors] = h.compute();
+                std::cout << "Z^" << freerk << " + ";
+                for(auto t : tors) {
+                    std::cout << "Z/" << t << " ";
+                }
+                std::cout << std::endl;
+            }
+        }
+    }
         break;
 
     case AppMode::Crux:
