@@ -70,10 +70,10 @@ int main(int argc, char* argv[])
         AbelianGroup a(mat, std::true_type{}, 2);
         // -> a = Z^2 + Z/96
 
-        if(auto res = a.compute(); res.first != 3
+        if(auto res = a.compute(); res.freerank != 3
            || std::accumulate(
-               res.second.begin(), res.second.end(), 1, std::multiplies<int64_t>{}) != 96) {
-            ERR_MSG("Wrong abelian group:" << std::endl << res);
+               res.torsions.begin(), res.torsions.end(), 1, std::multiplies<int64_t>{}) != 96) {
+            ERR_MSG("Wrong abelian group:" << std::endl << res.pretty());
             return -1;
         }
     }
@@ -177,13 +177,13 @@ int main(int argc, char* argv[])
         }
 
         if(auto im = imgrp.compute();
-           im.first != 2
+           im.freerank != 2
            || std::accumulate(
-               im.second.begin(), im.second.end(), 1,
+               im.torsions.begin(), im.torsions.end(), 1,
                std::multiplies<int64_t>{}) != 6) // 6 = 96/16
         {
             std::cout << u*coeffmat << std::endl;
-            ERR_MSG("Wrong image." << std::endl << im);
+            ERR_MSG("Wrong image." << std::endl << im.pretty());
             return -1;
         }
     }

@@ -59,28 +59,28 @@ int main(int argc, char* argv[])
         }
 
         if(auto h0 = h[0].compute();
-           h0.first != 0 || !h0.second.empty()) {
-            ERR_MSG("Wrong -1st homology: " << h0);
+           h0.freerank != 0 || !h0.torsions.empty()) {
+            ERR_MSG("Wrong -1st homology: " << h0.pretty());
             return -1;
         }
         if(auto h1 = h[1].compute();
-           h1.first != 0 || !h1.second.empty()) {
-            ERR_MSG("Wrong 0th homology: " << h1);
+           h1.freerank != 0 || !h1.torsions.empty()) {
+            ERR_MSG("Wrong 0th homology: " << h1.pretty());
             return -1;
         }
         if(auto h2 = h[2].compute();
-           h2.first != 0 || !h2.second.empty()) {
-            ERR_MSG("Wrong 1st homology: " << h2);
+           h2.freerank != 0 || !h2.torsions.empty()) {
+            ERR_MSG("Wrong 1st homology: " << h2.pretty());
             return -1;
         }
         if(auto h3 = h[3].compute();
-           h3.first != 1 || !h3.second.empty()) {
-            ERR_MSG("Wrong 2nd homology: " << h3);
+           h3.freerank != 1 || !h3.torsions.empty()) {
+            ERR_MSG("Wrong 2nd homology: " << h3.pretty());
             return -1;
         }
         if(auto h4 = h[4].compute();
-           h4.first != 0 || !h4.second.empty()) {
-            ERR_MSG("Wrong 3rd homology: " << h4);
+           h4.freerank != 0 || !h4.torsions.empty()) {
+            ERR_MSG("Wrong 3rd homology: " << h4.pretty());
             return -1;
         }
     }

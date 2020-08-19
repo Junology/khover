@@ -22,6 +22,37 @@
 
 namespace khover {
 
+//! Representation of abelian groups by direct sums of cyclic groups.
+struct AbGroupCyc {
+    //! Rank of the free part.
+    std::size_t freerank;
+    //! A list of torsions.
+    std::vector<int> torsions;
+
+    //! Pretty printer
+    std::string pretty() const noexcept {
+        std::string str_free
+            = freerank == 0 ? std::string{} : freerank == 1 ? std::string("Z") : "Z^" + std::to_string(freerank);
+        std::string str_tor{};
+
+        for(int t : torsions) {
+            if (!str_tor.empty())
+                str_tor += "+";
+            str_tor += "Z/" + std::to_string(t);
+        }
+
+        if(str_free.empty() && str_tor.empty())
+            return std::string("0");
+        else if (str_free.empty())
+            return str_tor;
+        else if (str_tor.empty())
+            return str_free;
+        else
+            return str_free + "+" + str_tor;
+    }
+};
+
+//! Representation of abelian groups by representation matrices.
 class AbelianGroup {
 public:
     using integer_t = int64_t;
@@ -175,7 +206,7 @@ public:
 
     //! Compute the abelian group in the form of the pair of the free rank and the list of torsions.
     //! \remark The result is not necessarily in the normal form.
-    std::pair<std::size_t, std::vector<int>>
+    AbGroupCyc
     compute() noexcept {
         do {
             reduce({}, {});
@@ -192,7 +223,7 @@ public:
                 torsions.push_back(std::abs(diag.coeff(i)));
         }
 
-        return std::make_pair(r+m_freerk, std::move(torsions));
+        return {r+m_freerk, std::move(torsions)};
     }
 
     //! Compute the image of a homomorphism whose codomain is this abelian group.

@@ -129,9 +129,9 @@ int main(int argc, char* argv[])
     std::cout << "---" << std::endl;
     std::cout << "Computing H_0..." << std::endl;
     auto h0 = h[0].compute();
-    std::cout << "Free rank: " << h0.first << std::endl;
-    std::cout << "Torsions: " << h0.second << std::endl;
-    if (h0.first != 3 || !h0.second.empty() != 0) {
+    std::cout << "Free rank: " << h0.freerank << std::endl;
+    std::cout << "Torsions: " << h0.torsions << std::endl;
+    if (h0.freerank != 3 || !h0.torsions.empty() != 0) {
         ERR_MSG("Wrong 0th homology");
         return -1;
     }
@@ -139,9 +139,9 @@ int main(int argc, char* argv[])
     std::cout << "---" << std::endl;
     std::cout << "Computing H_1..." << std::endl;
     auto h1 = h[1].compute();
-    std::cout << "Free rank: " << h1.first << std::endl;
-    std::cout << "Torsions: " << h1.second << std::endl;
-    if (h1.first != 2 || h1.second.size() != 1 || h1.second[0] != n) {
+    std::cout << "Free rank: " << h1.freerank << std::endl;
+    std::cout << "Torsions: " << h1.torsions << std::endl;
+    if (h1.freerank != 2 || h1.torsions.size() != 1 || h1.torsions[0] != n) {
         ERR_MSG("Wrong 1st homology");
         return -1;
     }
@@ -149,9 +149,9 @@ int main(int argc, char* argv[])
     std::cout << "---" << std::endl;
     std::cout << "Computing H_2..." << std::endl;
     auto h2 = h[2].compute();
-    std::cout << "Free rank: " << h2.first << std::endl;
-    std::cout << "Torsions: " << h2.second << std::endl;
-    if (h2.first != 2 || !h2.second.empty()) {
+    std::cout << "Free rank: " << h2.freerank << std::endl;
+    std::cout << "Torsions: " << h2.torsions << std::endl;
+    if (h2.freerank != 2 || !h2.torsions.empty()) {
         ERR_MSG("Wrong 2nd homology");
         return -1;
     }
@@ -159,9 +159,9 @@ int main(int argc, char* argv[])
     std::cout << "---" << std::endl;
     std::cout << "Computing H_3..." << std::endl;
     auto h3 = h[3].compute();
-    std::cout << "Free rank: " << h3.first << std::endl;
-    std::cout << "Torsions: " << h3.second << std::endl;
-    if (h3.first != 2 || h3.second.size() != 1 || h3.second[0] != n) {
+    std::cout << "Free rank: " << h3.freerank << std::endl;
+    std::cout << "Torsions: " << h3.torsions << std::endl;
+    if (h3.freerank != 2 || h3.torsions.size() != 1 || h3.torsions[0] != n) {
         ERR_MSG("Wrong 3rd homology");
         return -1;
     }

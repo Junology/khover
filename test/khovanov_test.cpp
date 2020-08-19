@@ -37,7 +37,7 @@ int main (int argc, char* argv[])
             }
 
             if(auto h0 = h[0].compute();
-               h0.first != 0 || !h0.second.empty())
+               h0.freerank != 0 || !h0.torsions.empty())
             {
                 ERR_MSG(
                     "Incorrect 1st cohomology groups: (deg,qdeg)=("
@@ -46,8 +46,8 @@ int main (int argc, char* argv[])
                 return -1;
             }
             if(auto h1 = h[1].compute();
-               ((q==-1 || q==-3) && (h1.first != 1 || !h1.second.empty()))
-               || (q!=-1 && q!=-3 && (h1.first != 0 || !h1.second.empty())))
+               ((q==-1 || q==-3) && (h1.freerank != 1 || !h1.torsions.empty()))
+               || (q!=-1 && q!=-3 && (h1.freerank != 0 || !h1.torsions.empty())))
             {
                 ERR_MSG(
                     "Incorrect 0th cohomology groups: (deg,qdeg)=("
@@ -56,7 +56,7 @@ int main (int argc, char* argv[])
                 return -1;
             }
             if(auto h2 = h[2].compute();
-               h2.first != 0 || !h2.second.empty())
+               h2.freerank != 0 || !h2.torsions.empty())
             {
                 ERR_MSG(
                     "Incorrect -1st cohomology groups: (deg,qdeg)=("
@@ -65,24 +65,24 @@ int main (int argc, char* argv[])
                 return -1;
             }
             if(auto h3 = h[3].compute();
-               (q==-5 && (h3.first != 1 || !h3.second.empty()))
+               (q==-5 && (h3.freerank != 1 || !h3.torsions.empty()))
                || (q==-7
-                   && (h3.first != 0
-                       || h3.second.size()!=1
-                       || h3.second[0]!=2))
-               || (q!=-5 && q!=-7 && (h3.first != 0 || !h3.second.empty())))
+                   && (h3.freerank != 0
+                       || h3.torsions.size()!=1
+                       || h3.torsions[0]!=2))
+               || (q!=-5 && q!=-7 && (h3.freerank != 0 || !h3.torsions.empty())))
             {
                 ERR_MSG(
                     "Incorrect -2nd cohomology groups: (deg,qdeg)=("
                     << -ch->mindeg()-3 << "," << q
                     << ")\n"
-                    << h3
+                    << h3.pretty()
                     );
                 return -1;
             }
             if(auto h4 = h[4].compute();
-               (q==-9 && (h4.first != 1 || !h4.second.empty()))
-               || (q!=-9 && (h4.first != 0 || !h4.second.empty())))
+               (q==-9 && (h4.freerank != 1 || !h4.torsions.empty()))
+               || (q!=-9 && (h4.freerank != 0 || !h4.torsions.empty())))
             {
                 ERR_MSG(
                     "Incorrect -3rd cohomology groups: (deg,qdeg)=("
@@ -119,7 +119,7 @@ int main (int argc, char* argv[])
             auto h = ch->compute();
 
             if(auto h0 = h[0].compute();
-               h0.first != 0 || !h0.second.empty())
+               h0.freerank != 0 || !h0.torsions.empty())
             {
                 ERR_MSG(
                     "Incorrect 3rd cohomology groups: (deg,qdeg)=("
@@ -128,11 +128,11 @@ int main (int argc, char* argv[])
                 return EXIT_FAILURE;
             }
             if(auto h1 = h[1].compute();
-               (q==3 && (h1.first != 1 || !h1.second.empty()))
+               (q==3 && (h1.freerank != 1 || !h1.torsions.empty()))
                || (q==1
-                   && (h1.first != 0
-                       || h1.second.size() != 1 || h1.second[0] != 2))
-               || (q!=3 && q != 1 && (h1.first != 0 || !h1.second.empty())))
+                   && (h1.freerank != 0
+                       || h1.torsions.size() != 1 || h1.torsions[0] != 2))
+               || (q!=3 && q != 1 && (h1.freerank != 0 || !h1.torsions.empty())))
             {
                 ERR_MSG(
                     "Incorrect 2nd cohomology groups: (deg,qdeg)=("
@@ -141,8 +141,8 @@ int main (int argc, char* argv[])
                 return EXIT_FAILURE;
             }
             if(auto h2 = h[2].compute();
-               (q==-1 && (h2.first != 1 || !h2.second.empty()))
-               || (q!=-1 && (h2.first != 0 || !h2.second.empty())))
+               (q==-1 && (h2.freerank != 1 || !h2.torsions.empty()))
+               || (q!=-1 && (h2.freerank != 0 || !h2.torsions.empty())))
             {
                 ERR_MSG(
                     "Incorrect 1st cohomology groups: (deg,qdeg)=("
@@ -151,11 +151,11 @@ int main (int argc, char* argv[])
                 return EXIT_FAILURE;
             }
             if(auto h3 = h[3].compute();
-               (q==-1 && (h3.first != 2 || !h3.second.empty()))
+               (q==-1 && (h3.freerank != 2 || !h3.torsions.empty()))
                || (q==-3
-                   && (h3.first != 1
-                       || h3.second.size() != 1 || h3.second[0] != 2))
-               || (q!=-1 && q!=-3 && (h3.first != 0 || !h3.second.empty())))
+                   && (h3.freerank != 1
+                       || h3.torsions.size() != 1 || h3.torsions[0] != 2))
+               || (q!=-1 && q!=-3 && (h3.freerank != 0 || !h3.torsions.empty())))
             {
                 ERR_MSG(
                     "Incorrect 0th cohomology groups: (deg,qdeg)=("
@@ -164,11 +164,11 @@ int main (int argc, char* argv[])
                 return EXIT_FAILURE;
             }
             if(auto h4 = h[4].compute();
-               (q==-3 && (h4.first != 1 || !h4.second.empty()))
+               (q==-3 && (h4.freerank != 1 || !h4.torsions.empty()))
                || (q==-5
-                   && (h4.first != 1
-                       || h4.second.size() != 1 || h4.second[0] != 2))
-               || (q!=-3 && q!=-5 && (h4.first != 0 || !h4.second.empty())))
+                   && (h4.freerank != 1
+                       || h4.torsions.size() != 1 || h4.torsions[0] != 2))
+               || (q!=-3 && q!=-5 && (h4.freerank != 0 || !h4.torsions.empty())))
             {
                 ERR_MSG(
                     "Incorrect -1st cohomology groups: (deg,qdeg)=("
@@ -177,11 +177,11 @@ int main (int argc, char* argv[])
                 return EXIT_FAILURE;
             }
             if(auto h5 = h[5].compute();
-               (q==-5 && (h5.first != 1 || !h5.second.empty()))
+               (q==-5 && (h5.freerank != 1 || !h5.torsions.empty()))
                || (q==-7
-                   && (h5.first != 1
-                       || h5.second.size() != 1 || h5.second[0] != 2))
-               || (q!=-5 && q!=-7 && (h5.first != 0 || !h5.second.empty())))
+                   && (h5.freerank != 1
+                       || h5.torsions.size() != 1 || h5.torsions[0] != 2))
+               || (q!=-5 && q!=-7 && (h5.freerank != 0 || !h5.torsions.empty())))
             {
                 ERR_MSG(
                     "Incorrect -2nd cohomology groups: (deg,qdeg)=("
@@ -190,11 +190,11 @@ int main (int argc, char* argv[])
                 return EXIT_FAILURE;
             }
             if(auto h6 = h[6].compute();
-               (q==-7 && (h6.first != 1 || !h6.second.empty()))
+               (q==-7 && (h6.freerank != 1 || !h6.torsions.empty()))
                || (q==-9
-                   && (h6.first != 1
-                       || h6.second.size() != 1 || h6.second[0] != 2))
-               || (q!=-7 && q!=-9 && (h6.first != 0 || !h6.second.empty())))
+                   && (h6.freerank != 1
+                       || h6.torsions.size() != 1 || h6.torsions[0] != 2))
+               || (q!=-7 && q!=-9 && (h6.freerank != 0 || !h6.torsions.empty())))
             {
                 ERR_MSG(
                     "Incorrect -3rd cohomology groups: (deg,qdeg)=("
@@ -203,8 +203,8 @@ int main (int argc, char* argv[])
                 return EXIT_FAILURE;
             }
             if(auto h7 = h[7].compute();
-               (q==-11 && (h7.first != 1 || !h7.second.empty()))
-               || (q!=-11 && (h7.first != 0 || !h7.second.empty())))
+               (q==-11 && (h7.freerank != 1 || !h7.torsions.empty()))
+               || (q!=-11 && (h7.freerank != 0 || !h7.torsions.empty())))
             {
                 ERR_MSG(
                     "Incorrect -4th cohomology groups: (deg,qdeg)=("

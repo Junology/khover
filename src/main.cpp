@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <exception>
 #include <functional>
 #include <vector>
@@ -165,6 +166,7 @@ std::vector<int> read_vector(
 
     return result;
 }
+
 
 /*********************
  *** Main function ***
@@ -349,13 +351,13 @@ int main(int argc, char* argv[])
             if(!ch)
                 continue;
             std::cout << "q-degree: " << q << std::endl;
+            int i = ch->mindeg();
             for(auto h : ch->compute()) {
-                auto [freerk, tors] = h.compute();
-                std::cout << "Z^" << freerk << " + ";
-                for(auto t : tors) {
-                    std::cout << "Z/" << t << " ";
-                }
-                std::cout << std::endl;
+                std::cout << std::setw(4) << std::right << (-i) << ": "
+                          << std::resetiosflags(std::ios_base::adjustfield | std::ios_base::basefield)
+                          << h.compute().pretty()
+                          << std::endl;
+                ++i;
             }
         }
     }
