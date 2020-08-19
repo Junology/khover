@@ -3,21 +3,9 @@
 
 #include "linkdiagram.hpp"
 
+#include "debug/debug.hpp"
+
 using namespace khover;
-
-template<class T>
-std::ostream& operator<<(std::ostream& os, std::vector<T> const& vec) {
-    if (vec.empty()) {
-        os << "{}";
-        return os;
-    }
-
-    os << "{" << vec.front();
-    for(auto itr = std::next(std::begin(vec)); itr != std::end(vec); ++itr)
-        os << ", " << *itr;
-    os << "}";
-    return os;
-}
 
 int main(int argc, char* argv[])
 {
@@ -213,5 +201,52 @@ int main(int argc, char* argv[])
             return -1;
         }
     }
+
+    auto six_two2 = read_gauss_code(
+        {-1,4,-3,1,-2,6,-5,3,-4,2,-6,5},
+        {std::make_pair(5,false)});
+
+    if(!six_two2) {
+        ERR_MSG("Failed to load the knot 6_2.");
+        return -1;
+    }
+
+    if (six_two2->crosses()[0].is_positive != false
+        || six_two2->crosses()[1].is_positive != false
+        || six_two2->crosses()[2].is_positive != true
+        || six_two2->crosses()[3].is_positive != true
+        || six_two2->crosses()[4].is_positive != false
+        || six_two2->crosses()[5].is_positive != false
+        )
+    {
+        ERR_MSG("Wrong signs on crossings.");
+        return -1;
+    }
+
+    for(unsigned long k = 0; k < cipow(2,6); ++k) {
+        if (auto comps = six_two2->smoothing(state_t{k});
+            (k == 0b000000ul && comps.first != 5)
+            || (k == 0b000001ul && comps.first != 4)
+            || (k == 0b000010ul && comps.first != 4)
+            || (k == 0b000011ul && comps.first != 3)
+            || (k == 0b000100ul && comps.first != 4)
+            || (k == 0b000101ul && comps.first != 3)
+            || (k == 0b000110ul && comps.first != 3)
+            || (k == 0b000111ul && comps.first != 2)
+            || (k == 0b001000ul && comps.first != 4)
+            || (k == 0b001001ul && comps.first != 3)
+            || (k == 0b001010ul && comps.first != 3)
+            || (k == 0b001011ul && comps.first != 2)
+            || (k == 0b001100ul && comps.first != 3)
+            || (k == 0b001101ul && comps.first != 4)
+            || (k == 0b001110ul && comps.first != 2)
+            || (k == 0b001111ul && comps.first != 3)
+            )
+        {
+            ERR_MSG("Wrong smoothings");
+            return -1;
+        }
+    }
+
     return 0;
 }

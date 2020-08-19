@@ -12,39 +12,14 @@
 
 #include "khovanov.hpp"
 
+/* Debug
+#include "debug/debug.hpp"
+//*/
+
 using namespace khover;
 
 using matrix_t = ChainIntegral::matrix_t;
 
-/* Debug
-template<class T>
-std::ostream& operator<<(std::ostream& os, std::vector<T> const& vec) {
-    if (vec.empty()) {
-        os << "{}";
-        return os;
-    }
-
-    os << "{" << vec.front();
-    for(auto itr = std::next(std::begin(vec)); itr != std::end(vec); ++itr)
-        os << ", " << *itr;
-    os << "}";
-    return os;
-}
-
-template <>
-std::ostream& operator<<(std::ostream& os, std::vector<uint8_t> const& vec) {
-    if (vec.empty()) {
-        os << "{}";
-        return os;
-    }
-
-    os << "{" << vec.front()+0;
-    for(auto itr = std::next(std::begin(vec)); itr != std::end(vec); ++itr)
-        os << ", " << (*itr)+0;
-    os << "}";
-    return os;
-}
-//*/
 
 /*******************************************
  *** Multiplication and comultiplication ***
@@ -184,13 +159,28 @@ khover::khChain(const LinkDiagram &diagram, int qdeg)
             headidx.push_back(0);
         }
         else {
+            auto i_prev = bitsWithPop<max_components>(
+                state_t{i}.count(), sti-1).to_ullong();
             headidx.push_back(
-                headidx[
-                    bitsWithPop<max_components>(
-                        state_t{i}.count(), sti-1).to_ullong()]
-                + binom(comps[i].first, popcnts[i]) );
+                headidx[i_prev]
+                + binom(comps[i_prev].first, popcnts[i_prev]) );
         }
     }
+
+    // for(std::size_t pcnt = 0; pcnt <= diagram.ncrosses(); ++pcnt) {
+    //     DBG_MSG(
+    //         "\e[32;1mCoh. degree = "
+    //         << static_cast<int>(pcnt) - static_cast<int>(diagram.nnegative())
+    //         << "\e[m");
+    //     for(std::size_t i = 0; i < binom(diagram.ncrosses(), pcnt); ++i) {
+    //         auto st = bitsWithPop<max_crosses>(pcnt, i).to_ulong();
+    //         DBG_MSG(
+    //             std::bitset<8>(st) << "\n"
+    //             << comps[st] << "\n"
+    //             << popcnts[st] << "\n"
+    //             << headidx[st] );
+    //     }
+    // }
 
     // Compute the matrices representing matrices.
     ChainIntegral result(
@@ -237,7 +227,11 @@ khover::khChain(const LinkDiagram &diagram, int qdeg)
                 for(std::size_t arc = 0; arc < diagram.narcs(); ++arc) {
                     // The saddle causes multiplication.
                     if(comps[st_cod].second[arc] < comps[st_dom].second[arc]) {
-                        for(auto [r,c] : matrix_mult(popcnts[st_cod], comps[st_cod].first, comps[st_cod].second[arc], comps[st_dom].second[arc])) {
+                        for(auto [r,c] : matrix_mult(
+                                popcnts[st_cod],
+                                comps[st_cod].first,
+                                comps[st_cod].second[arc],
+                                comps[st_dom].second[arc])) {
                             diffmat.coeffRef(
                                 headidx[st_cod]+r,
                                 headidx[st_dom]+c
