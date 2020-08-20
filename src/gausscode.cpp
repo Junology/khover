@@ -7,6 +7,8 @@
  */
 
 #include <map>
+#include <queue>
+#include <stack>
 #include <utility>
 #include <algorithm>
 #include <iterator>
@@ -172,76 +174,97 @@ std::optional<gcode_t>
 separate_vertices(std::size_t numcrs, gcode_t const& gdual)
     noexcept
 {
-    // The result will be stored to these variables.
-    gcode_t result{};
-    // Store the place where each vertex first appears.
-    std::vector<std::optional<std::size_t>> fst_tbl(numcrs, std::nullopt);
-    // list of "possibly inner" vertices.
-    std::vector<bool> innerflag(numcrs, false);
-    // Begining of the component and the current position.
-    std::size_t compsep = 0, cur = 0;
-    // Stack for pairing check.
-    gcode_t pair_check_stack{};
+    // Marks put on crossings which indicate
+    //  -1: the crossing is set to be "outside";
+    //   1: the crossing is set to be "inside";
+    //   0: undetermined.
+    std::vector<int> marks(numcrs, 0);
 
-    while(compsep < gdual.size()) {
-        /*
-         * Make the "outside" list.
-         */
-        for(cur = compsep; cur < gdual.size() && gdual[cur] != 0; ++cur) {
-            auto v = std::abs(gdual[cur]) - 1;
+    // Determine marks on the crossings.
+    // The process repeats until all crossings are marked.
+    for(auto itr = std::begin(gdual); itr != std::end(gdual);
+        itr = std::find_if(
+            std::begin(gdual), std::end(gdual),
+            [&marks](int c) { return marks[std::abs(c)-1] == 0; }))
+    {
+        // Queue of setters.
+        // setter_q.first : The target crossing.
+        // setter_q.second: The mark to be set.
+        std::queue<std::pair<int,int>> setter_q;
 
-            // If the next vertex is in "possibly inside" list, then ignore it.
-            if(innerflag[v])
+        // The first undetermined vertex is set to be "inside".
+        setter_q.emplace(std::abs(*itr)-1,1);
+
+        // Iterate while there is a setter in the queue.
+        while(!setter_q.empty()) {
+            // Alias
+            auto tgt = setter_q.front().first;
+            auto mrk = setter_q.front().second;
+
+            setter_q.pop();
+
+            // If the setter marks a crossing by the same marker, then just skip.
+            if (marks[tgt] == mrk)
                 continue;
-
-            // The index already appeard
-            if(fst_tbl[v]) {
-                // Add the vertex to the "outside" list with the sign ignored
-                result.push_back(std::abs(gdual[cur]));
-
-                // Forget the appearance.
-                fst_tbl[v].reset();
-
-                // Add the vertices between this vertex to "inside" list
-                for(std::size_t j = *(fst_tbl[v]) + 1; j < cur; ++j) {
-                    // Unless the appearance is forgotten.
-                    if (fst_tbl[std::abs(gdual[j])-1]) {
-                        innerflag[std::abs(gdual[j])-1] = true;
-                    }
-                }
+            // Contradictory marking causes an error.
+            else if (marks[tgt] != 0) {
+                ERR_MSG("ERROR: Cannot divide vertices.");
+                return std::nullopt;
             }
-            // New index
-            else {
-                fst_tbl[v].emplace(cur);
-            }
-        }
 
-        /*
-         * Make sure the "inside" list passes pairing test.
-         */
-        for(std::size_t i = compsep; i < cur; ++i) {
-            // We are interested only in the vertices in "inside" list.
-            if (!innerflag[std::abs(gdual[i])-1])
-                continue;
+            // Set the mark.
+            marks[tgt] = mrk;
 
-            // If a pair found, add it to the "inner" list.
-            if(!pair_check_stack.empty()
-               && pair_check_stack.back() == gdual[i])
+            // Find the first appearance of the target crossing in the dual code.
+            std::size_t beg = 0;
+            while(beg < gdual.size()
+                  && std::abs(gdual[beg]) != tgt+1)
+                ++beg;
+
+            // Count the appearance of crossings between the target crossing.
+            std::vector<std::size_t> numappears(numcrs,0);
+            std::size_t end = beg+1;
+            while(end < gdual.size()
+                  && std::abs(gdual[end]) != tgt+1)
             {
-                pair_check_stack.pop_back();
+                ++numappears[std::abs(gdual[end])-1];
+                ++end;
             }
-            // Otherwise, push the possibly-new vertex to the stack.
-            else {
-                pair_check_stack.push_back(gdual[i]);
+
+            // Error if the target crossing appears less than twice.
+            if(end >= gdual.size()) {
+                ERR_MSG("ERROR: Every crossing must appear exactly twice.");
+            }
+
+            // Push setters that mark oddly appearing crossings
+            for(std::size_t j = beg; j < end; ++j) {
+                if(numappears[std::abs(gdual[j])-1]%2 != 0)
+                    setter_q.emplace(std::abs(gdual[j])-1, -mrk);
             }
         }
+    }
 
-        // Pairing check failed
-        if (!pair_check_stack.empty())
-            return std::nullopt;
+    // Pairing check on both "inside" and "outside" crossings.
+    std::stack<int> pairing_out{}, pairing_inn{};
+    for(auto c : gdual) {
+        auto c_abs = std::abs(c);
+        auto& pairing = marks[c_abs-1] == -1 ? pairing_out : pairing_inn;
 
-        // Go to the next component
-        compsep = cur;
+        if(!pairing.empty() && pairing.top() == c_abs)
+            pairing.pop();
+        else
+            pairing.push(c_abs);
+    }
+    if(!pairing_out.empty() || !pairing_inn.empty()) {
+        ERR_MSG("ERROR: Pairing check failed.");
+        return std::nullopt;
+    }
+
+    // Extract the "outside" crossings.
+    gcode_t result{};
+    for(int c = 0; static_cast<std::size_t>(c) < numcrs; ++c) {
+        if (marks[c] == -1)
+            result.push_back(c+1);
     }
 
     // Return the result.

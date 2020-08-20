@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "linkdiagram.hpp"
+#include "debug/debug.hpp"
 
 using namespace khover;
 
@@ -224,12 +225,46 @@ int main(int argc, char* argv[])
            || borromean->crosses()[5].adj_arc[2] != 10
            || borromean->crosses()[5].adj_arc[3] != 11
             ) {
-            std::cerr << "Failed to load Borromean ring." << std::endl;
-            return -1;
+            ERR_MSG("Failed to load Borromean ring.");
+            return EXIT_FAILURE;
         }
 
         std::cout << "Pass" << std::endl;
     }
 
-    return 0;
+    // True-lover's knot (8_19) as a non-alternating knot.
+    {
+        auto truelover = read_gauss_code(
+            {-1, 2, -3, -4, 5, -6, 7, -8, 4, -5, 6, 1, -2, -7, 8, 3},
+            {std::make_pair(1,false)}
+            );
+
+        if(!truelover) {
+            ERR_MSG("Failed to load true lover's knot.");
+            return EXIT_FAILURE;
+        }
+        for(auto const& v : truelover->crosses()) {
+            std::cout << (v.is_positive ? '+' : '-');
+        }
+        std::cout << std::endl;
+    }
+
+    // Another code for true-lover's knot.
+    {
+        auto truelover2 = read_gauss_code(
+            {1, -8, 2, -1, -4, 5, 8, -2, -3, 7, -6, 4, -5, 3, -7, 6},
+            {std::make_pair(1,false)}
+            );
+
+        if(!truelover2) {
+            ERR_MSG("Failed to load true lover's knot.");
+            return EXIT_FAILURE;
+        }
+        for(auto const& v : truelover2->crosses()) {
+            std::cout << (v.is_positive ? '+' : '-');
+        }
+        std::cout << std::endl;
+    }
+
+    return EXIT_SUCCESS;
 }
