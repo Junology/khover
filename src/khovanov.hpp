@@ -21,4 +21,8 @@ namespace khover {
 std::optional<ChainIntegral>
 khChain(LinkDiagram const& diagram, int qdeg) noexcept;
 
+//! Compute crux complex of a given link diagram and a given crossing.
+std::optional<ChainIntegral>
+cruxChain(LinkDiagram diagram, std::size_t dblpt, int qdeg) noexcept;
+
 } // end namespace khover

@@ -9,6 +9,8 @@
 #include <algorithm>
 #include "linkdiagram.hpp"
 
+#include "debug/debug.hpp"
+
 using namespace khover;
 
 
@@ -132,4 +134,76 @@ khover::LinkDiagram::smoothing(state_t st)
     return std::make_pair(
         m_numarcs - index_rmed.count(),
         std::move(result));
+}
+
+// Determine which arcs are twisted in the crux complex.
+std::optional<std::pair<state_t,std::bitset<max_arcs>>>
+LinkDiagram::cruxTwists(state_t st, std::size_t dblpt)
+    const noexcept
+{
+    // Return immediately in case the double point is out-of-range.
+    if (dblpt >= m_cross.size())
+        return std::nullopt;
+
+    // Extend the state on crossings to double point so that the double point is smoothed along the orientation.
+    st = (st & low_window<max_crosses>(dblpt))
+        | (state_t{m_cross[dblpt].is_positive ? 0u : 1u} << dblpt)
+        | ((st & ~low_window<max_crosses>(dblpt)) << 1);
+
+    std::bitset<max_arcs> is_twisted{0u};
+    std::size_t icur = dblpt;
+    std::size_t dir = 1;
+
+    do {
+        is_twisted.set(m_cross[icur].adj_arc[dir]);
+
+        // Find the other end of the arc.
+        std::size_t i = 0, d = 0;
+        for(; i < m_cross.size(); ++i) {
+            for(d = 0; d < 4; ++d) {
+                if (i == icur && d == dir)
+                    continue;
+                if(m_cross[i].adj_arc[d] == m_cross[icur].adj_arc[dir])
+                    break;
+            }
+            if (d < 4)
+                break;
+        }
+
+        // Not found => error.
+        if(i >= m_cross.size()) {
+            ERR_MSG("Twisted arc is not closed");
+            return std::nullopt;
+        }
+
+        // Move to next.
+        icur = i;
+        switch(d) {
+        case 0:
+            dir = m_cross[i].is_positive == st.test(i) ? 2 : 3;
+            break;
+
+        case 1:
+            dir = m_cross[i].is_positive == st.test(i) ? 3 : 2;
+            break;
+
+        case 2:
+            dir = m_cross[i].is_positive == st.test(i) ? 0 : 1;
+            break;
+
+        case 3:
+            dir = m_cross[i].is_positive == st.test(i) ? 1 : 0;
+            break;
+
+        default:
+            ERR_MSG("Something bad happened.");
+            return std::nullopt;
+        }
+    } while(icur != dblpt);
+
+    if(dir == 1) {
+        return std::nullopt;
+    }
+    else
+        return std::make_pair(st,is_twisted);
 }

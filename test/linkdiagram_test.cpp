@@ -202,6 +202,38 @@ int main(int argc, char* argv[])
         }
     }
 
+    // Crux smoothing test
+    {
+        for(std::size_t st = 0; st < cipow(2,5); ++st) {
+            auto stbit = std::bitset<max_crosses>(st);
+            auto crux_result = six_two->cruxTwists(st, 4);
+
+            if (stbit.test(4)
+                && (stbit.test(3)
+                    || (stbit.test(0) && stbit.test(1) && stbit.test(2)))) {
+
+                if (!crux_result) {
+                    ERR_MSG("Wrong detection of non-crux state:\n" << stbit);
+                    return EXIT_FAILURE;
+                }
+
+                if(auto [stbit,is_twisted] = *crux_result;
+                   (st == 0b100111 && is_twisted.to_ulong() != 0b011011010101ul)
+                   || (stbit.test(3) && is_twisted.to_ulong() != 0b001010000100))
+                {
+                    ERR_MSG("Wrong twisted arcs:\n" << stbit << "\n" << is_twisted);
+                    return EXIT_FAILURE;
+                }
+            }
+            else {
+                if (crux_result) {
+                    ERR_MSG("Failed to detect non-crux states:" << stbit);
+                    return EXIT_FAILURE;
+                }
+            }
+        }
+    }
+
     auto six_two2 = read_gauss_code(
         {-1,4,-3,1,-2,6,-5,3,-4,2,-6,5},
         {std::make_pair(5,false)});

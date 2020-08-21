@@ -122,6 +122,47 @@ public:
 
     //\}
 
+
+    /*!
+     * \name Crossing manipulation.
+     */
+    //\{
+
+    //! Swap two crossings.
+    inline
+    void
+    swapCrossings(std::size_t c0, std::size_t c1) noexcept {
+        if (c0 < m_cross.size() && c1 < m_cross.size() && c0 != c1)
+            std::swap(m_cross[c0], m_cross[c1]);
+    }
+
+    //! Crossing change
+    inline
+    void
+    crossingChange(std::size_t c) noexcept {
+        if (c < m_cross.size())
+            m_cross[c].is_positive ^= true;
+    }
+
+    //! Make a crossing positive.
+    inline
+    void
+    makePositive(std::size_t c) noexcept {
+        if (c < m_cross.size())
+            m_cross[c].is_positive = true;
+    }
+
+    //! Make a crossing negative.
+    inline
+    void
+    makeNegative(std::size_t c) noexcept {
+        if (c < m_cross.size())
+            m_cross[c].is_positive = false;
+    }
+
+    //\}
+
+
     /*!
      * \name State manipulation.
      */
@@ -147,6 +188,16 @@ public:
     //! \retval (n,c) For each 0 <= i narcs()-1, c[i] is the index of the component that contains the i-th arc, and n is the number of components.
     std::pair<std::size_t,std::vector<component_t>>
     smoothing(state_t st) const noexcept;
+
+    //! Determine which arcs are twisted in the crux complex.
+    //! \param st A state on crossings except the double point. This implies that indices in the variable *st* may differ from those in the diagram in the case they have larger than that of the double point. To avoid this, one can ensure the double point has the largest index by using *swapCrossings* member function.
+    //! \param dblpt The crossing which is regarded as a double point in the crux complex.
+    //! \return If st is a crux state, then the returned value is a pair of
+    //!   - a state on the oridinal diagram so that the double point is smoothed along the orientation; and
+    //!   - a set of flags indicating whether each arcs are twisted or not.
+    //! Otherwise, std::nullopt;
+    std::optional<std::pair<state_t,std::bitset<max_arcs>>>
+    cruxTwists(state_t st, std::size_t dblpt) const noexcept;
     //\}
 };
 
