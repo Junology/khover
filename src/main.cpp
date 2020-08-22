@@ -363,9 +363,36 @@ int main(int argc, char* argv[])
     }
         break;
 
-    case AppMode::Crux:
-        std::cout << "Computation of Crux homology is WIP." << std::endl;
-        std::cout << "Target crossing: " << target_crossing << std::endl;
+    case AppMode::Crux: {
+        if (target_crossing <= 0 || target_crossing > static_cast<int>(diagram->ncrosses())) {
+            std::cerr << "Invalid double point index." << std::endl;
+            return EXIT_FAILURE;
+        }
+
+        int qmin =
+            - static_cast<int>(diagram->smoothing(0u).first)
+            - static_cast<int>(diagram->nnegative())
+            + diagram->writhe();
+        int qmax =
+            static_cast<int>(diagram->smoothing(~state_t(0u)).first)
+            + static_cast<int>(diagram->npositive())
+            + diagram->writhe();
+
+        for(int q = qmin; q <= qmax; q+=2) {
+            auto ch = cruxChain(*diagram, target_crossing-1, q);
+            if(!ch)
+                continue;
+            std::cout << "q-degree: " << q << std::endl;
+            int i = ch->mindeg();
+            for(auto h : ch->compute()) {
+                std::cout << std::setw(4) << std::right << (-i) << ": "
+                          << std::resetiosflags(std::ios_base::adjustfield | std::ios_base::basefield)
+                          << h.compute().pretty()
+                          << std::endl;
+                ++i;
+            }
+        }
+    }
         break;
 
     case AppMode::Derivative:

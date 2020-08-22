@@ -204,6 +204,7 @@ LinkDiagram::cruxTwists(state_t st, std::size_t dblpt)
     if(dir == 1) {
         return std::nullopt;
     }
-    else
+    else {
         return std::make_pair(st,is_twisted);
+    }
 }

@@ -34,14 +34,14 @@ using matrix_t = ChainIntegral::matrix_t;
 //! \remark The function assumes idx1 < idx2.
 //! \return The table of positions in the matrix where coefficients are 1.
 static
-std::vector<std::pair<int,int>>
+std::vector<std::pair<matrix_t::Index,matrix_t::Index>>
 matrix_mult(
     int numx, int ncomps_in_cod,
     std::size_t comp_idx1, std::size_t comp_idx2)
     noexcept
 {
     auto enh_bound = binom(ncomps_in_cod, numx);
-    std::vector<std::pair<int,int>> result{};
+    std::vector<std::pair<matrix_t::Index,matrix_t::Index>> result{};
 
     auto dommask = low_window<max_components>(comp_idx2);
 
@@ -326,7 +326,7 @@ khover::cruxChain(LinkDiagram diagram, std::size_t dblpt, int qdeg)
         // In this step, the double point is counted as a positive crossing.
         int deg
             = qdeg + 2*diagram.nnegative() - diagram.npositive()
-            - stbits.count() + (diagram.crosses()[dblpt].is_positive ? -3 : 0);
+            - stbits.count() + (diagram.crosses()[dblpt].is_positive ? 0 : -3);
 
         // Parity check
         if ((summand[st].ncomp - deg)%2 != 0) {
@@ -342,7 +342,7 @@ khover::cruxChain(LinkDiagram diagram, std::size_t dblpt, int qdeg)
 
     // Compute the matrices representing matrices.
     ChainIntegral result(
-        -diagram.npositive()-1 - (diagram.crosses()[dblpt].is_positive ? 0 : 1),
+        -diagram.npositive() - (diagram.crosses()[dblpt].is_positive ? 0 : 1),
         matrix_t(0, summand[nstates-1].nenhancement())
         );
 
@@ -358,12 +358,19 @@ khover::cruxChain(LinkDiagram diagram, std::size_t dblpt, int qdeg)
 
         // Traverse all the state pairs
         for(std::size_t stidx_cod = 0;
-            stidx_cod < binom(diagram.ncrosses(), i);
+            stidx_cod < binom(diagram.ncrosses()-1, i);
             ++stidx_cod)
         {
             // The state associated with the index.
             auto stbits_cod = bitsWithPop<max_crosses>(i, stidx_cod);
             auto st_cod = stbits_cod.to_ulong();
+
+            // Skip states that has no enhancement in the q-degree.
+            if(summand[st_cod].xcnt < 0
+               || summand[st_cod].xcnt > static_cast<int>(summand[st_cod].ncomp))
+            {
+                continue;
+            }
 
             for(std::size_t c = 0; c < diagram.ncrosses()-1; ++c) {
                 if(!stbits_cod.test(c))
@@ -372,6 +379,13 @@ khover::cruxChain(LinkDiagram diagram, std::size_t dblpt, int qdeg)
                 auto stbits_dom = stbits_cod;
                 stbits_dom.set(c,false);
                 auto st_dom = stbits_dom.to_ulong();
+
+                // Skip states that has no enhancement in the q-degree.
+                if(summand[st_dom].xcnt < 0
+                   || summand[st_dom].xcnt > static_cast<int>(summand[st_cod].ncomp))
+                {
+                    continue;
+                }
 
                 // The coefficient between the domain/codomain states.
                 auto coeff = diagram.stateCoeff(
@@ -386,21 +400,16 @@ khover::cruxChain(LinkDiagram diagram, std::size_t dblpt, int qdeg)
                     // The saddle causes multiplication.
                     if(summand[st_cod].arc_tbl[arc] < summand[st_dom].arc_tbl[arc])
                     {
-                        /***
-                         *** WIP
-                         ***/
                         // Enabled if the operation is involved with twisted arcs.
-                        // In that case, action_arc is a non-twisted arc that acts on the twisted arc.
                         std::optional<std::size_t> action_arc;
-                        if(summand[st_dom].twisted_tbl.test(
-                               summand[st_dom].arc_tbl[arc]))
+                        if ((summand[st_dom].twisted_tbl
+                             ^ summand[st_cod].twisted_tbl).any())
                         {
-                            action_arc = summand[st_cod].arc_tbl[arc];
-                        }
-                        else if(summand[st_dom].twisted_tbl.test(
-                                    summand[st_cod].arc_tbl[arc]))
-                        {
-                            action_arc = summand[st_dom].arc_tbl[arc];
+                            // In that case, action_arc is a non-twisted arc that acts on the twisted arc.
+                            if(summand[st_dom].twisted_tbl.test(arc))
+                                action_arc = summand[st_cod].arc_tbl[arc];
+                            else
+                                action_arc = summand[st_dom].arc_tbl[arc];
                         }
 
                         for(auto [r,c] : matrix_mult(
@@ -409,11 +418,12 @@ khover::cruxChain(LinkDiagram diagram, std::size_t dblpt, int qdeg)
                                 summand[st_cod].arc_tbl[arc],
                                 summand[st_dom].arc_tbl[arc]))
                         {
+                            // -1 if 'x' on the act circle.
                             diffmat.coeffRef(
                                 summand[st_cod].headidx+r,
                                 summand[st_dom].headidx+c
                                 ) += action_arc && bitsWithPop<max_components>(
-                                    summand[st_dom].ncomp, c).test(*action_arc)
+                                    summand[st_dom].xcnt, c).test(*action_arc)
                                 ? -coeff : coeff;
                         }
                         break;
@@ -422,21 +432,16 @@ khover::cruxChain(LinkDiagram diagram, std::size_t dblpt, int qdeg)
                     else if (summand[st_cod].arc_tbl[arc]
                              > summand[st_dom].arc_tbl[arc])
                     {
-                        /***
-                         *** WIP
-                         ***/
                         // Enabled if the operation is involved with twisted arcs.
-                        // In that case, coact_arc is a non-twisted arc that coacts on the twisted arc.
                         std::optional<std::size_t> coact_arc;
-                        if(summand[st_cod].twisted_tbl.test(
-                               summand[st_dom].arc_tbl[arc]))
+                        if ((summand[st_dom].twisted_tbl
+                             ^ summand[st_cod].twisted_tbl).any())
                         {
-                            coact_arc = summand[st_cod].arc_tbl[arc];
-                        }
-                        else if(summand[st_cod].twisted_tbl.test(
-                                    summand[st_cod].arc_tbl[arc]))
-                        {
-                            coact_arc = summand[st_dom].arc_tbl[arc];
+                            // In that case, coact_arc is a non-twisted arc that coacts on the twisted arc.
+                            if(summand[st_cod].twisted_tbl.test(arc))
+                                coact_arc = summand[st_dom].arc_tbl[arc];
+                            else
+                                coact_arc = summand[st_cod].arc_tbl[arc];
                         }
 
                         for(auto [r,c] : matrix_comult(
@@ -445,12 +450,13 @@ khover::cruxChain(LinkDiagram diagram, std::size_t dblpt, int qdeg)
                                 summand[st_dom].arc_tbl[arc],
                                 summand[st_cod].arc_tbl[arc]))
                         {
+                            // -1 if '1' on the coact circle.
                             diffmat.coeffRef(
                                 summand[st_cod].headidx+r,
                                 summand[st_dom].headidx+c
                                 ) += coact_arc && bitsWithPop<max_components>(
-                                    summand[st_cod].ncomp, r).test(*coact_arc)
-                                ? -coeff : coeff;
+                                    summand[st_cod].xcnt, r).test(*coact_arc)
+                                ? coeff : -coeff;
                         }
                         break;
                     }

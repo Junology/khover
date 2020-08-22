@@ -69,3 +69,9 @@ khover_test(
   "${CMAKE_SOURCE_DIR}/src/gausscode.cpp;${CMAKE_SOURCE_DIR}/src/linkdiagram.cpp;${CMAKE_SOURCE_DIR}/src/khovanov.cpp"
   Eigen3::Eigen
   )
+
+khover_test(
+  crux_test
+  "${CMAKE_SOURCE_DIR}/src/gausscode.cpp;${CMAKE_SOURCE_DIR}/src/linkdiagram.cpp;${CMAKE_SOURCE_DIR}/src/khovanov.cpp"
+  Eigen3::Eigen
+  )
