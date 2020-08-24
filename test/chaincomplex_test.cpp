@@ -30,6 +30,40 @@ int main(int argc, char* argv[])
             return -1;
         }
     }
+
+    // Rank computation
+    {
+        ChainIntegral ch(
+            -1,
+            (matrix_t(1,3) << 1, 1, 1).finished(),
+            (matrix_t(3,6) <<
+             1, 1, 1, 1, 0, 0,
+             -1,-1,0, 0, 1, 1,
+             0, 0,-1,-1,-1,-1).finished(),
+            (matrix_t(6,3) <<
+             1, 0, 1,
+             0, 1, 0,
+             -1,0, 0,
+             0,-1,-1,
+             1, 1, 0,
+             0, 0, 1).finished()
+            );
+        if(ch.rank(-2) != 0
+           || ch.rank(-1) != 1
+           || ch.rank(0) != 3
+           || ch.rank(1) != 6
+           || ch.rank(2) != 3
+           || ch.rank(3) != 0)
+        {
+            ERR_MSG("Wrong ranks:{"
+                    << ch.rank(-1) << ", "
+                    << ch.rank(0) << ", "
+                    << ch.rank(1) << ", "
+                    << ch.rank(2) << ", "
+                    << ch.rank(3) << "}");
+            return EXIT_FAILURE;
+        }
+    }
     //*/
     {
         ChainIntegral ch(

@@ -47,6 +47,12 @@ khover_test(
   )
 
 khover_test(
+  cone_test
+  ""
+  Eigen3::Eigen
+  )
+
+khover_test(
   states_test
   ""
   Eigen3::Eigen
