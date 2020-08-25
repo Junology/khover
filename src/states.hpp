@@ -33,6 +33,40 @@ using component_t = std::uint8_t;
 //! The type representing enhancements on states.
 using enhancement_t = std::bitset<max_components>;
 
+//! The class to carry data associated to a smoothing
+//! \tparam T The type associating components to arcs.
+//! It must satisfy
+//! \code
+//!   static_assert(
+//!     std::is_same_v<
+//!       std::decay_t<decltype(std::declval<T>()[std::declval<std::size_t>()])>,
+//!       component_t>,
+//!       "...");
+//! \endcode
+template <class T>
+struct Smoothing {
+    static_assert(
+        std::is_same_v<
+        std::decay_t<decltype(std::declval<T>()[std::declval<std::size_t>()])>,
+        component_t
+        >,
+        "The template parameter T must have operator[] admitting indices of type std::size_t and returning component_t.");
+
+    //! The state associated to the smoothing.
+    state_t state;
+
+    //! The number of components.
+    std::size_t ncomp;
+
+    //! Assignment of components to each arc.
+    T arccomp;
+};
+
+//! The class to carry data associated to a smoothing and twisting of arcs.
+template <class T>
+struct SmoothTw : Smoothing<T> {
+    std::bitset<max_arcs> twist;
+};
 
 /************************************
  *** Constants for bit operations ***
@@ -49,9 +83,9 @@ std::size_t maskbits = std::min(
         std::numeric_limits<unsigned long long int>::digits));
 
 
-/*****************
- *** Functions ***
- *****************/
+/*************************************************
+ *** Utility functions for state manipulations ***
+ *************************************************/
 
 //! Generate low-cut window
 template <std::size_t n>
@@ -106,6 +140,34 @@ bitsIndex(std::bitset<n> bits)
     }
 
     return result;
+}
+
+//! Get the predecessor with the same popcount.
+//! \pre bitsIndex(bits) > 0.
+template<std::size_t n>
+inline std::bitset<n>
+predWithPop(std::bitset<n> const& bits)
+    noexcept
+{
+    return bitsWithPop<n>(
+        bits.count(),
+        bitsIndex(bits)-1
+        );
+}
+
+
+//! Insert a bit in a bitset.
+//! \param bs The bitset to be inserted to.
+//! \param pos The position where a new bit is inserted.
+//! \param flag The newly inserted bit.
+template<std::size_t n>
+inline
+std::bitset<n>
+insertBit(std::bitset<n> const& bs, std::size_t pos, bool flag)
+{
+    return (bs & low_window<n>(pos))
+        | (std::bitset<n>{static_cast<unsigned long>(flag)} << pos)
+        | ((bs & ~low_window<max_crosses>(pos)) << 1);
 }
 
 } // end namespace khover

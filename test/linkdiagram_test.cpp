@@ -254,12 +254,12 @@ int main(int argc, char* argv[])
         return -1;
     }
 
-    if (six_two2->crosses()[0].is_positive != false
-        || six_two2->crosses()[1].is_positive != false
-        || six_two2->crosses()[2].is_positive != true
-        || six_two2->crosses()[3].is_positive != true
-        || six_two2->crosses()[4].is_positive != false
-        || six_two2->crosses()[5].is_positive != false
+    if (six_two2->getSign(0) >= 0
+        || six_two2->getSign(1) >= 0
+        || six_two2->getSign(2) <= 0
+        || six_two2->getSign(3) <= 0
+        || six_two2->getSign(4) >= 0
+        || six_two2->getSign(5) >= 0
         )
     {
         ERR_MSG("Wrong signs on crossings.");

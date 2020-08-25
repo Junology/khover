@@ -16,17 +16,17 @@ int main(int argc, char* argv[])
         if (!trefoil
             || trefoil->ncrosses() != 3
             || trefoil->narcs() != 6
-            || trefoil->crosses()[0].is_positive != false
+            || trefoil->getSign(0) >= 0
             || trefoil->crosses()[0].adj_arc[0] != 5
             || trefoil->crosses()[0].adj_arc[1] != 0
             || trefoil->crosses()[0].adj_arc[2] != 2
             || trefoil->crosses()[0].adj_arc[3] != 3
-            || trefoil->crosses()[1].is_positive != false
+            || trefoil->getSign(1) >= 0
             || trefoil->crosses()[1].adj_arc[0] != 1
             || trefoil->crosses()[1].adj_arc[1] != 2
             || trefoil->crosses()[1].adj_arc[2] != 4
             || trefoil->crosses()[1].adj_arc[3] != 5
-            || trefoil->crosses()[2].is_positive != false
+            || trefoil->getSign(2) >= 0
             || trefoil->crosses()[2].adj_arc[0] != 3
             || trefoil->crosses()[2].adj_arc[1] != 4
             || trefoil->crosses()[2].adj_arc[2] != 0
@@ -50,32 +50,32 @@ int main(int argc, char* argv[])
         if(!six_two
            || six_two->narcs() != 12
            || six_two->ncrosses() != 6
-           || six_two->crosses()[0].is_positive != false
+           || six_two->getSign(0) >= 0
            || six_two->crosses()[0].adj_arc[0] != 11
            || six_two->crosses()[0].adj_arc[1] != 0
            || six_two->crosses()[0].adj_arc[2] != 4
            || six_two->crosses()[0].adj_arc[3] != 5
-           || six_two->crosses()[1].is_positive != false
+           || six_two->getSign(1) >= 0
            || six_two->crosses()[1].adj_arc[0] != 5
            || six_two->crosses()[1].adj_arc[1] != 6
            || six_two->crosses()[1].adj_arc[2] != 0
            || six_two->crosses()[1].adj_arc[3] != 1
-           || six_two->crosses()[2].is_positive != false
+           || six_two->getSign(2) >= 0
            || six_two->crosses()[2].adj_arc[0] != 3
            || six_two->crosses()[2].adj_arc[1] != 4
            || six_two->crosses()[2].adj_arc[2] != 10
            || six_two->crosses()[2].adj_arc[3] != 11
-           || six_two->crosses()[3].is_positive != false
+           || six_two->getSign(3) >= 0
            || six_two->crosses()[3].adj_arc[0] != 9
            || six_two->crosses()[3].adj_arc[1] != 10
            || six_two->crosses()[3].adj_arc[2] != 6
            || six_two->crosses()[3].adj_arc[3] != 7
-           || six_two->crosses()[4].is_positive != true
+           || six_two->getSign(4) <= 0
            || six_two->crosses()[4].adj_arc[0] != 1
            || six_two->crosses()[4].adj_arc[1] != 2
            || six_two->crosses()[4].adj_arc[2] != 8
            || six_two->crosses()[4].adj_arc[3] != 9
-           || six_two->crosses()[5].is_positive != true
+           || six_two->getSign(5) <= 0
            || six_two->crosses()[5].adj_arc[0] != 7
            || six_two->crosses()[5].adj_arc[1] != 8
            || six_two->crosses()[5].adj_arc[2] != 2
@@ -98,32 +98,32 @@ int main(int argc, char* argv[])
         if(!six_two
            || six_two->narcs() != 12
            || six_two->ncrosses() != 6
-           || six_two->crosses()[0].is_positive != true
+           || six_two->getSign(0) <= 0
            || six_two->crosses()[0].adj_arc[0] != 11
            || six_two->crosses()[0].adj_arc[1] != 0
            || six_two->crosses()[0].adj_arc[2] != 4
            || six_two->crosses()[0].adj_arc[3] != 5
-           || six_two->crosses()[1].is_positive != true
+           || six_two->getSign(1) <= 0
            || six_two->crosses()[1].adj_arc[0] != 5
            || six_two->crosses()[1].adj_arc[1] != 6
            || six_two->crosses()[1].adj_arc[2] != 0
            || six_two->crosses()[1].adj_arc[3] != 1
-           || six_two->crosses()[2].is_positive != true
+           || six_two->getSign(2) <= 0
            || six_two->crosses()[2].adj_arc[0] != 3
            || six_two->crosses()[2].adj_arc[1] != 4
            || six_two->crosses()[2].adj_arc[2] != 10
            || six_two->crosses()[2].adj_arc[3] != 11
-           || six_two->crosses()[3].is_positive != true
+           || six_two->getSign(3) <= 0
            || six_two->crosses()[3].adj_arc[0] != 9
            || six_two->crosses()[3].adj_arc[1] != 10
            || six_two->crosses()[3].adj_arc[2] != 6
            || six_two->crosses()[3].adj_arc[3] != 7
-           || six_two->crosses()[4].is_positive != false
+           || six_two->getSign(4) >= 0
            || six_two->crosses()[4].adj_arc[0] != 1
            || six_two->crosses()[4].adj_arc[1] != 2
            || six_two->crosses()[4].adj_arc[2] != 8
            || six_two->crosses()[4].adj_arc[3] != 9
-           || six_two->crosses()[5].is_positive != false
+           || six_two->getSign(5) >= 0
            || six_two->crosses()[5].adj_arc[0] != 7
            || six_two->crosses()[5].adj_arc[1] != 8
            || six_two->crosses()[5].adj_arc[2] != 2
@@ -146,32 +146,32 @@ int main(int argc, char* argv[])
         if(!six_two
            || six_two->narcs() != 12
            || six_two->ncrosses() != 6
-           || six_two->crosses()[0].is_positive != true
+           || six_two->getSign(0) <= 0
            || six_two->crosses()[0].adj_arc[0] != 11
            || six_two->crosses()[0].adj_arc[1] != 0
            || six_two->crosses()[0].adj_arc[2] != 4
            || six_two->crosses()[0].adj_arc[3] != 5
-           || six_two->crosses()[1].is_positive != true
+           || six_two->getSign(1) <= 0
            || six_two->crosses()[1].adj_arc[0] != 5
            || six_two->crosses()[1].adj_arc[1] != 6
            || six_two->crosses()[1].adj_arc[2] != 0
            || six_two->crosses()[1].adj_arc[3] != 1
-           || six_two->crosses()[2].is_positive != true
+           || six_two->getSign(2) <= 0
            || six_two->crosses()[2].adj_arc[0] != 3
            || six_two->crosses()[2].adj_arc[1] != 4
            || six_two->crosses()[2].adj_arc[2] != 10
            || six_two->crosses()[2].adj_arc[3] != 11
-           || six_two->crosses()[3].is_positive != true
+           || six_two->getSign(3) <= 0
            || six_two->crosses()[3].adj_arc[0] != 9
            || six_two->crosses()[3].adj_arc[1] != 10
            || six_two->crosses()[3].adj_arc[2] != 6
            || six_two->crosses()[3].adj_arc[3] != 7
-           || six_two->crosses()[4].is_positive != false
+           || six_two->getSign(4) >= 0
            || six_two->crosses()[4].adj_arc[0] != 1
            || six_two->crosses()[4].adj_arc[1] != 2
            || six_two->crosses()[4].adj_arc[2] != 8
            || six_two->crosses()[4].adj_arc[3] != 9
-           || six_two->crosses()[5].is_positive != false
+           || six_two->getSign(5) >= 0
            || six_two->crosses()[5].adj_arc[0] != 7
            || six_two->crosses()[5].adj_arc[1] != 8
            || six_two->crosses()[5].adj_arc[2] != 2
@@ -194,32 +194,32 @@ int main(int argc, char* argv[])
         if(!borromean
            || borromean->narcs() != 12
            || borromean->ncrosses() != 6
-           || borromean->crosses()[0].is_positive != false
+           || borromean->getSign(0) >= 0
            || borromean->crosses()[0].adj_arc[0] != 3
            || borromean->crosses()[0].adj_arc[1] != 0
            || borromean->crosses()[0].adj_arc[2] != 7
            || borromean->crosses()[0].adj_arc[3] != 4
-           || borromean->crosses()[1].is_positive != true
+           || borromean->getSign(1) <= 0
            || borromean->crosses()[1].adj_arc[0] != 11
            || borromean->crosses()[1].adj_arc[1] != 8
            || borromean->crosses()[1].adj_arc[2] != 0
            || borromean->crosses()[1].adj_arc[3] != 1
-           || borromean->crosses()[2].is_positive != true
+           || borromean->getSign(2) <= 0
            || borromean->crosses()[2].adj_arc[0] != 1
            || borromean->crosses()[2].adj_arc[1] != 2
            || borromean->crosses()[2].adj_arc[2] != 5
            || borromean->crosses()[2].adj_arc[3] != 6
-           || borromean->crosses()[3].is_positive != false
+           || borromean->getSign(3) >= 0
            || borromean->crosses()[3].adj_arc[0] != 9
            || borromean->crosses()[3].adj_arc[1] != 10
            || borromean->crosses()[3].adj_arc[2] != 2
            || borromean->crosses()[3].adj_arc[3] != 3
-           || borromean->crosses()[4].is_positive != false
+           || borromean->getSign(4) >= 0
            || borromean->crosses()[4].adj_arc[0] != 4
            || borromean->crosses()[4].adj_arc[1] != 5
            || borromean->crosses()[4].adj_arc[2] != 8
            || borromean->crosses()[4].adj_arc[3] != 9
-           || borromean->crosses()[5].is_positive != true
+           || borromean->getSign(5) <= 0
            || borromean->crosses()[5].adj_arc[0] != 6
            || borromean->crosses()[5].adj_arc[1] != 7
            || borromean->crosses()[5].adj_arc[2] != 10
@@ -243,8 +243,13 @@ int main(int argc, char* argv[])
             ERR_MSG("Failed to load true lover's knot.");
             return EXIT_FAILURE;
         }
-        for(auto const& v : truelover->crosses()) {
-            std::cout << (v.is_positive ? '+' : '-');
+
+        // The diagram has only negative crossings.
+        for(std::size_t c = 0; c < truelover->ncrosses(); ++c) {
+            if (truelover->getSign(c) >= 0) {
+                ERR_MSG("Wrong sign of crossings in truelover.");
+                return EXIT_FAILURE;
+            }
         }
         std::cout << std::endl;
     }
@@ -260,8 +265,13 @@ int main(int argc, char* argv[])
             ERR_MSG("Failed to load true lover's knot.");
             return EXIT_FAILURE;
         }
-        for(auto const& v : truelover2->crosses()) {
-            std::cout << (v.is_positive ? '+' : '-');
+
+        // The diagram has only negative crossings.
+        for(std::size_t c = 0; c < truelover2->ncrosses(); ++c) {
+            if (truelover2->getSign(c) >= 0) {
+                ERR_MSG("Wrong sign of crossings in truelover2.");
+                return EXIT_FAILURE;
+            }
         }
         std::cout << std::endl;
     }

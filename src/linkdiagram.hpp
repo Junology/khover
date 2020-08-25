@@ -39,6 +39,9 @@ public:
         unsigned int adj_arc[4];
     };
 
+    using smoothdata_t = Smoothing<std::vector<component_t>>;
+    using smoothtwist_t = SmoothTw<std::vector<component_t>>;
+
 private:
     std::size_t m_numarcs;
     std::vector<Crossing> m_cross;
@@ -120,6 +123,17 @@ public:
     const std::vector<Crossing>&
     crosses() const noexcept { return m_cross; }
 
+    //! Get the sign of a crossing.
+    //! \retval -1 The crossing is negative.
+    //! \retval 1 The crossing is positive.
+    //! \retval 0 Out-of-range.
+    inline
+    int
+    getSign(std::size_t c) const noexcept {
+        return c < m_cross.size()
+                   ? (m_cross[c].is_positive ? 1 : -1) : 0;
+    }
+
     //\}
 
 
@@ -188,6 +202,21 @@ public:
     //! \retval (n,c) For each 0 <= i narcs()-1, c[i] is the index of the component that contains the i-th arc, and n is the number of components.
     std::pair<std::size_t,std::vector<component_t>>
     smoothing(state_t st) const noexcept;
+
+    //! Listing all smoothings.
+    //! \param state_on_cross A list of fixed states on crossings.
+    //! \retval smt For a *state* st, smt[st] carries the data of components in the smoothing according to st together with fixed states; here, by *state* we mean states on all crossings but ones with fixed states.
+    std::vector<smoothdata_t>
+    listSmoothings(
+        std::initializer_list<std::pair<std::size_t,bool>> const& state_on_cross = {})
+        const noexcept;
+
+    //! Listing all smoothings together with the data of twisted arcs.
+    //! In contrast to listSmoothings function, this function does not compute components for non-crux states and keep it empty.
+    //! \param state_on_cross A list of fixed states on crossings.
+    //! \retval smt For a *state* st, smt[st] carries the data of components in the smoothing according to st together with fixed states; here, by *state* we mean states on all crossings but ones with fixed states.
+    std::vector<smoothtwist_t>
+    listSmoothingsWithTwist(std::size_t dblpt) const noexcept;
 
     //! Determine which arcs are twisted in the crux complex.
     //! \param st A state on crossings except the double point. This implies that indices in the variable *st* may differ from those in the diagram in the case they have larger than that of the double point. To avoid this, one can ensure the double point has the largest index by using *swapCrossings* member function.

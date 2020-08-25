@@ -21,6 +21,63 @@ using namespace khover;
 using matrix_t = ChainIntegral::matrix_t;
 
 
+/******************************
+ *** Enhancement properties ***
+ ******************************/
+//! The type carrying the data of enhancements on each state.
+struct EnhancementProperty {
+    //! The index of the first enhancement on a state among a certain (co)homological degree.
+    matrix_t::Index headidx;
+
+    //! The number of 'x' in the enhancements.
+    //! This might be negative or exceed the number of components in case no enhancement is allowed in the q-degree.
+    int xcnt = -1;
+};
+
+template <class T>
+static
+std::optional<std::vector<EnhancementProperty>>
+get_enhancement_prop(
+    LinkDiagram const& diagram,
+    std::vector<T> const& smoothData,
+    int qdeg)
+{
+    static_assert(std::is_base_of_v<LinkDiagram::smoothdata_t, T>,
+                  "The template parameter T must be derived from LinkDiagram::smoothdata_t.");
+
+    std::vector<EnhancementProperty> result{};
+    result.reserve(smoothData.size());
+    for(std::size_t st = 0; st < smoothData.size(); ++st) {
+        matrix_t::Index headidx = 0;
+
+        if(bitsIndex(state_t{st}) > 0) {
+            auto st_pred = predWithPop(state_t{st}).to_ulong();
+            headidx = result[st_pred].headidx
+                + binom(smoothData[st_pred].ncomp, result[st_pred].xcnt);
+        }
+
+        // In case where component data is not provided
+        if (smoothData[st].arccomp.empty()) {
+            result.push_back({headidx, -1});
+            continue;
+        }
+
+        // Compute the degree.
+        int deg = qdeg - diagram.writhe()
+            - diagram.cohDegree(smoothData[st].state);
+
+        // Parity check
+        if ((smoothData[st].ncomp - deg)%2 != 0)
+            return std::nullopt;
+
+        // Append the result
+        result.push_back(
+            {headidx, (static_cast<int>(smoothData[st].ncomp) - deg)/2});
+    }
+
+    return std::make_optional(std::move(result));
+}
+
 /*******************************************
  *** Multiplication and comultiplication ***
  *******************************************/
@@ -115,89 +172,32 @@ std::optional<ChainIntegral>
 khover::khChain(const LinkDiagram &diagram, int qdeg)
     noexcept
 {
-    std::size_t nstates = cipow(2,diagram.ncrosses());
-
     // The table of component data.
-    std::vector<std::pair<std::size_t,std::vector<component_t>>> comps;
+    auto smoothData = diagram.listSmoothings();
 
-    // The number of 'x' in the enhancements.
-    // An entry may be negative if there is no enhancement in the q-degree.
-    std::vector<int> popcnts;
-
-    // The table of the begining indices of states in enhanced state vectors.
-    std::vector<matrix_t::Index> headidx;
-
-    // Compute all smoothings and the number of 'x's.
-    comps.reserve(nstates);
-    popcnts.reserve(nstates);
-    headidx.reserve(nstates);
-    for(std::size_t i = 0; i < nstates; ++i) {
-        // Compute smoothing.
-        comps.push_back(
-            diagram.smoothing(state_t{i}));
-
-        // Compute degree.
-        int deg = qdeg - diagram.writhe()
-            - diagram.cohDegree(state_t{i});
-
-        // Parity check
-        if ((comps[i].first - deg)%2 != 0) {
-            return std::nullopt;
-        }
-
-        // The number of 'x' in the enhancement of the degree.
-        // If m is # of '1' and n is # of 'x', then
-        // m + n = comps[i].first
-        // m - n = deg
-        popcnts.push_back((comps[i].first - deg)/2);
-
-        // Compute the begining index
-        if(auto sti = bitsIndex(state_t{i});
-           sti <= 0)
-        {
-            headidx.push_back(0);
-        }
-        else {
-            auto i_prev = bitsWithPop<max_components>(
-                state_t{i}.count(), sti-1).to_ullong();
-            headidx.push_back(
-                headidx[i_prev]
-                + binom(comps[i_prev].first, popcnts[i_prev]) );
-        }
-    }
-
-    // for(std::size_t pcnt = 0; pcnt <= diagram.ncrosses(); ++pcnt) {
-    //     DBG_MSG(
-    //         "\e[32;1mCoh. degree = "
-    //         << static_cast<int>(pcnt) - static_cast<int>(diagram.nnegative())
-    //         << "\e[m");
-    //     for(std::size_t i = 0; i < binom(diagram.ncrosses(), pcnt); ++i) {
-    //         auto st = bitsWithPop<max_crosses>(pcnt, i).to_ulong();
-    //         DBG_MSG(
-    //             std::bitset<8>(st) << "\n"
-    //             << comps[st] << "\n"
-    //             << popcnts[st] << "\n"
-    //             << headidx[st] );
-    //     }
-    // }
+    // Compute the enhancement data
+    std::vector<EnhancementProperty> enh_prop{};
+    // Check if q-degree has compatible parity
+    if(auto aux = get_enhancement_prop(diagram, smoothData, qdeg); !aux)
+        return std::nullopt;
+    else
+        enh_prop = std::move(*aux);
 
     // Compute the matrices representing matrices.
     ChainIntegral result(
         -diagram.npositive()-1,
         matrix_t(
-            0,
-            binom(comps[nstates-1].first, popcnts[nstates-1]))
-        );
+            0, binom(smoothData.back().ncomp, enh_prop.back().xcnt)));
     for(int i = diagram.ncrosses(); i > 0; --i) {
         std::size_t maxst_cod
             = (low_window<max_crosses>(i)<<(diagram.ncrosses()-i)).to_ullong();
         std::size_t maxst_dom
             = (low_window<max_crosses>(i-1)<<(diagram.ncrosses()-i+1)).to_ullong();
         matrix_t diffmat = matrix_t::Zero(
-            headidx[maxst_cod]
-            + binom(comps[maxst_cod].first, popcnts[maxst_cod]),
-            headidx[maxst_dom]
-            + binom(comps[maxst_dom].first, popcnts[maxst_dom]));
+            enh_prop[maxst_cod].headidx
+            + binom(smoothData[maxst_cod].ncomp, enh_prop[maxst_cod].xcnt),
+            enh_prop[maxst_dom].headidx
+            + binom(smoothData[maxst_dom].ncomp, enh_prop[maxst_dom].xcnt));
 
         // Traverse all the state pairs
         for(std::size_t stidx_cod = 0;
@@ -225,25 +225,33 @@ khover::khChain(const LinkDiagram &diagram, int qdeg)
                 // Find the position where saddle operation is applied.
                 for(std::size_t arc = 0; arc < diagram.narcs(); ++arc) {
                     // The saddle causes multiplication.
-                    if(comps[st_cod].second[arc] < comps[st_dom].second[arc]) {
+                    if(smoothData[st_cod].arccomp[arc] < smoothData[st_dom].arccomp[arc])
+                    {
                         for(auto [r,c] : matrix_mult(
-                                popcnts[st_cod],
-                                comps[st_cod].first,
-                                comps[st_cod].second[arc],
-                                comps[st_dom].second[arc])) {
+                                enh_prop[st_cod].xcnt,
+                                smoothData[st_cod].ncomp,
+                                smoothData[st_cod].arccomp[arc],
+                                smoothData[st_dom].arccomp[arc])) {
                             diffmat.coeffRef(
-                                headidx[st_cod]+r,
-                                headidx[st_dom]+c
+                                enh_prop[st_cod].headidx+r,
+                                enh_prop[st_dom].headidx+c
                                 ) += coeff;
                         }
                         break;
                     }
                     // The saddle causes comultiplication
-                    else if (comps[st_cod].second[arc] > comps[st_dom].second[arc]) {
-                        for(auto [r,c] : matrix_comult(popcnts[st_cod], comps[st_cod].first, comps[st_dom].second[arc], comps[st_cod].second[arc])) {
+                    else if(smoothData[st_cod].arccomp[arc]
+                            > smoothData[st_dom].arccomp[arc])
+                    {
+                        for(auto [r,c] : matrix_comult(
+                                enh_prop[st_cod].xcnt,
+                                smoothData[st_cod].ncomp,
+                                smoothData[st_dom].arccomp[arc],
+                                smoothData[st_cod].arccomp[arc]))
+                        {
                             diffmat.coeffRef(
-                                headidx[st_cod]+r,
-                                headidx[st_dom]+c
+                                enh_prop[st_cod].headidx+r,
+                                enh_prop[st_dom].headidx+c
                                 ) += coeff;
                         }
                         break;
@@ -272,78 +280,21 @@ khover::cruxChain(LinkDiagram diagram, std::size_t dblpt, int qdeg)
         return std::nullopt;
     }
 
-    // The number of states on crossings except the double point.
-    std::size_t nstates = cipow(2,diagram.ncrosses()-1);
+    auto smoothData = diagram.listSmoothingsWithTwist(dblpt);
 
-    struct CompT {
-        matrix_t::Index headidx;
-        state_t st_ext;
-        std::size_t ncomp{0};
-        int xcnt{-1};
-        std::vector<component_t> arc_tbl{};
-        std::bitset<max_arcs> twisted_tbl{0u};
-
-        inline std::size_t nenhancement() const noexcept {
-            return binom(ncomp,xcnt);
-        }
-    };
-
-    std::vector<CompT> summand(nstates, CompT{});
-
-    for(std::size_t st = 0; st < nstates; ++st) {
-        auto stbits = state_t{st};
-
-        // Compute the head index of the state in the complex.
-        if (auto i = bitsIndex(stbits); i == 0) {
-            summand[st].headidx = 0;
-        }
-        else {
-            // Compute the previous state in the same degree.
-            auto st_prev = bitsWithPop<max_crosses>(
-                stbits.count(),
-                bitsIndex(stbits)-1
-                ).to_ulong();
-            summand[st].headidx
-                = summand[st_prev].headidx
-                + binom(summand[st_prev].ncomp, summand[st_prev].xcnt);
-        }
-
-        // Get twisted arcs.
-        // If the state is not crux, skip it.
-        if (auto iscrux = diagram.cruxTwists(st,dblpt);
-            !iscrux) {
-            continue;
-        }
-        // For crux states, remember the twisted arcs and compute the smoothings.
-        else {
-            summand[st].st_ext = iscrux->first;
-            summand[st].twisted_tbl = iscrux->second;
-            std::tie(summand[st].ncomp, summand[st].arc_tbl)
-                = diagram.smoothing(iscrux->first);
-        }
-
-        // Compute degree.
-        // In this step, the double point is counted as a positive crossing.
-        int deg
-            = qdeg + 2*diagram.nnegative() - diagram.npositive()
-            - stbits.count() + (diagram.crosses()[dblpt].is_positive ? 0 : -3);
-
-        // Parity check
-        if ((summand[st].ncomp - deg)%2 != 0) {
-            return std::nullopt;
-        }
-
-        // The number of 'x' in the enhancement of the degree.
-        // If m is # of '1' and n is # of 'x', then
-        // m + n = ncomps
-        // m - n = deg
-        summand[st].xcnt = (summand[st].ncomp - deg)/2;
-    }
+    // Compute the enhancement data
+    std::vector<EnhancementProperty> enh_prop{};
+    // Check if q-degree has compatible parity
+    if(auto aux = get_enhancement_prop(
+           diagram, smoothData, diagram.getSign(dblpt) > 0 ? qdeg : qdeg-2); !aux)
+        return std::nullopt;
+    else
+        enh_prop = std::move(*aux);
 
     // Compute the matrices representing matrices.
     ChainIntegral result(
-        -diagram.npositive() - (diagram.crosses()[dblpt].is_positive ? 0 : 1),
-        matrix_t(0, summand[nstates-1].nenhancement())
+        -diagram.npositive() - (diagram.getSign(dblpt) > 0 ? 0 : 1),
+        matrix_t(0, binom(smoothData.back().ncomp, enh_prop.back().xcnt))
         );
 
     for(int i = diagram.ncrosses()-1; i > 0; --i) {
@@ -352,8 +303,10 @@ khover::cruxChain(LinkDiagram diagram, std::size_t dblpt, int qdeg)
         std::size_t maxst_dom
             = (low_window<max_crosses>(i-1)<<(diagram.ncrosses()-i)).to_ullong();
         matrix_t diffmat = matrix_t::Zero(
-            summand[maxst_cod].headidx + summand[maxst_cod].nenhancement(),
-            summand[maxst_dom].headidx + summand[maxst_dom].nenhancement()
+            enh_prop[maxst_cod].headidx
+            + binom(smoothData[maxst_cod].ncomp, enh_prop[maxst_cod].xcnt),
+            enh_prop[maxst_dom].headidx
+            + binom(smoothData[maxst_dom].ncomp, enh_prop[maxst_dom].xcnt)
             );
 
         // Traverse all the state pairs
@@ -366,8 +319,9 @@ khover::cruxChain(LinkDiagram diagram, std::size_t dblpt, int qdeg)
             auto st_cod = stbits_cod.to_ulong();
 
             // Skip states that has no enhancement in the q-degree.
-            if(summand[st_cod].xcnt < 0
-               || summand[st_cod].xcnt > static_cast<int>(summand[st_cod].ncomp))
+            if(enh_prop[st_cod].xcnt < 0
+               || (enh_prop[st_cod].xcnt
+                   > static_cast<int>(smoothData[st_cod].ncomp)))
             {
                 continue;
             }
@@ -381,15 +335,16 @@ khover::cruxChain(LinkDiagram diagram, std::size_t dblpt, int qdeg)
                 auto st_dom = stbits_dom.to_ulong();
 
                 // Skip states that has no enhancement in the q-degree.
-                if(summand[st_dom].xcnt < 0
-                   || summand[st_dom].xcnt > static_cast<int>(summand[st_cod].ncomp))
+                if(enh_prop[st_dom].xcnt < 0
+                   || (enh_prop[st_dom].xcnt
+                       > static_cast<int>(smoothData[st_cod].ncomp)))
                 {
                     continue;
                 }
 
                 // The coefficient between the domain/codomain states.
                 auto coeff = diagram.stateCoeff(
-                    summand[st_dom].st_ext, summand[st_cod].st_ext);
+                    smoothData[st_dom].state, smoothData[st_cod].state);
 
                 // Skip the case where the codomain state is not adjacent to the domain state.
                 if(coeff == 0)
@@ -398,64 +353,65 @@ khover::cruxChain(LinkDiagram diagram, std::size_t dblpt, int qdeg)
                 // Find the position where saddle operation is applied.
                 for(std::size_t arc = 0; arc < diagram.narcs(); ++arc) {
                     // The saddle causes multiplication.
-                    if(summand[st_cod].arc_tbl[arc] < summand[st_dom].arc_tbl[arc])
+                    if(smoothData[st_cod].arccomp[arc]
+                       < smoothData[st_dom].arccomp[arc])
                     {
                         // Enabled if the operation is involved with twisted arcs.
                         std::optional<std::size_t> action_arc;
-                        if ((summand[st_dom].twisted_tbl
-                             ^ summand[st_cod].twisted_tbl).any())
+                        if ((smoothData[st_dom].twist
+                             ^ smoothData[st_cod].twist).any())
                         {
                             // In that case, action_arc is a non-twisted arc that acts on the twisted arc.
-                            if(summand[st_dom].twisted_tbl.test(arc))
-                                action_arc = summand[st_cod].arc_tbl[arc];
+                            if(smoothData[st_dom].twist.test(arc))
+                                action_arc = smoothData[st_cod].arccomp[arc];
                             else
-                                action_arc = summand[st_dom].arc_tbl[arc];
+                                action_arc = smoothData[st_dom].arccomp[arc];
                         }
 
                         for(auto [r,c] : matrix_mult(
-                                summand[st_cod].xcnt,
-                                summand[st_cod].ncomp,
-                                summand[st_cod].arc_tbl[arc],
-                                summand[st_dom].arc_tbl[arc]))
+                                enh_prop[st_cod].xcnt,
+                                smoothData[st_cod].ncomp,
+                                smoothData[st_cod].arccomp[arc],
+                                smoothData[st_dom].arccomp[arc]))
                         {
                             // -1 if 'x' on the act circle.
                             diffmat.coeffRef(
-                                summand[st_cod].headidx+r,
-                                summand[st_dom].headidx+c
+                                enh_prop[st_cod].headidx+r,
+                                enh_prop[st_dom].headidx+c
                                 ) += action_arc && bitsWithPop<max_components>(
-                                    summand[st_dom].xcnt, c).test(*action_arc)
+                                    enh_prop[st_dom].xcnt, c).test(*action_arc)
                                 ? -coeff : coeff;
                         }
                         break;
                     }
                     // The saddle causes comultiplication
-                    else if (summand[st_cod].arc_tbl[arc]
-                             > summand[st_dom].arc_tbl[arc])
+                    else if (smoothData[st_cod].arccomp[arc]
+                             > smoothData[st_dom].arccomp[arc])
                     {
                         // Enabled if the operation is involved with twisted arcs.
                         std::optional<std::size_t> coact_arc;
-                        if ((summand[st_dom].twisted_tbl
-                             ^ summand[st_cod].twisted_tbl).any())
+                        if ((smoothData[st_dom].twist
+                             ^ smoothData[st_cod].twist).any())
                         {
                             // In that case, coact_arc is a non-twisted arc that coacts on the twisted arc.
-                            if(summand[st_cod].twisted_tbl.test(arc))
-                                coact_arc = summand[st_dom].arc_tbl[arc];
+                            if(smoothData[st_cod].twist.test(arc))
+                                coact_arc = smoothData[st_dom].arccomp[arc];
                             else
-                                coact_arc = summand[st_cod].arc_tbl[arc];
+                                coact_arc = smoothData[st_cod].arccomp[arc];
                         }
 
                         for(auto [r,c] : matrix_comult(
-                                summand[st_cod].xcnt,
-                                summand[st_cod].ncomp,
-                                summand[st_dom].arc_tbl[arc],
-                                summand[st_cod].arc_tbl[arc]))
+                                enh_prop[st_cod].xcnt,
+                                smoothData[st_cod].ncomp,
+                                smoothData[st_dom].arccomp[arc],
+                                smoothData[st_cod].arccomp[arc]))
                         {
                             // -1 if '1' on the coact circle.
                             diffmat.coeffRef(
-                                summand[st_cod].headidx+r,
-                                summand[st_dom].headidx+c
+                                enh_prop[st_cod].headidx+r,
+                                enh_prop[st_dom].headidx+c
                                 ) += coact_arc && bitsWithPop<max_components>(
-                                    summand[st_cod].xcnt, r).test(*coact_arc)
+                                    enh_prop[st_cod].xcnt, r).test(*coact_arc)
                                 ? coeff : -coeff;
                         }
                         break;
