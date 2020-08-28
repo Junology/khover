@@ -95,10 +95,10 @@ public:
         std::cout << "Project home page: " << appconf::url << std::endl;
     }
 
-    std::pair<bool,std::vector<std::string_view>>
+    std::pair<ProcessResult,std::vector<std::string_view>>
     process(int argc, char** argv) {
         std::vector<std::string_view> args(argv, argv+argc);
-        bool terminated = false;
+        ProcessResult terminate_flag = ProcessResult::Pass;
 
         for(auto itr = std::next(std::begin(args)); itr != std::end(args);) {
             if(itr->size() <= 1 || (*itr)[0] != '-') {
@@ -108,11 +108,11 @@ public:
 
             if(std::isalnum((*itr)[1])) {
                 if(auto cmd = cmds.find((*itr)[1]); cmd != std::end(cmds)) {
-                    terminated = cmd->second.func(itr->substr(2));
+                    terminate_flag = cmd->second.func(itr->substr(2));
                     itr = args.erase(itr);
 
-                    if(terminated)
-                        return std::make_pair(true, std::move(args));
+                    if(terminate_flag & ProcessResult::Terminate)
+                        return std::make_pair(terminate_flag, std::move(args));
 
                     continue;
                 }
@@ -124,16 +124,16 @@ public:
                     if(cmds[name->second].take_parameter
                        && std::next(itr) != std::end(args))
                     {
-                        terminated = cmds[name->second].func(*std::next(itr));
+                        terminate_flag = cmds[name->second].func(*std::next(itr));
                         itr = args.erase(itr, std::next(itr,2));
                     }
                     else {
-                        terminated = cmds[name->second].func("");
+                        terminate_flag = cmds[name->second].func("");
                         itr = args.erase(itr);
                     }
 
-                    if(terminated)
-                        return std::make_pair(true, std::move(args));
+                    if(terminate_flag & ProcessResult::Terminate)
+                        return std::make_pair(terminate_flag, std::move(args));
                     continue;
                 }
             }
@@ -141,7 +141,7 @@ public:
             ++itr;
         }
 
-        return std::make_pair(false,std::move(args));
+        return std::make_pair(ProcessResult::Pass,std::move(args));
     }
 };
 
