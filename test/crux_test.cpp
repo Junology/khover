@@ -20,6 +20,8 @@ int main(int argc, char* argv[])
             ERR_MSG("Failed to load the figure-eight knot.");
             return EXIT_FAILURE;
         }
+
+        auto fecube = CruxCube::fromDiagram(*figureeight, 2);
         int qmin =
             - static_cast<int>(figureeight->smoothing(0u).first)
             - static_cast<int>(figureeight->nnegative())
@@ -31,7 +33,7 @@ int main(int argc, char* argv[])
 
         for(int q = qmin; q <= qmax; q+=2) {
             std::cout << "\e[33;1mq-degree: " << q << "\e[m" <<std::endl;
-            auto cch = cruxChain(*figureeight, 2, q);
+            auto cch = cruxChain(*figureeight, 2, fecube, q);
 
             if(!cch) {
                 ERR_MSG("Error in computing the crux complex.");
@@ -86,6 +88,8 @@ int main(int argc, char* argv[])
             ERR_MSG("Failed to load the figure-eight knot.");
             return EXIT_FAILURE;
         }
+
+        auto mfecube = CruxCube::fromDiagram(*mfigureeight,2);
         int qmin =
             - static_cast<int>(mfigureeight->smoothing(0u).first)
             - static_cast<int>(mfigureeight->nnegative())
@@ -97,7 +101,7 @@ int main(int argc, char* argv[])
 
         for(int q = qmin; q <= qmax; q+=2) {
             std::cout << "\e[33;1mq-degree: " << q << "\e[m" <<std::endl;
-            auto cch = cruxChain(*mfigureeight, 2, q);
+            auto cch = cruxChain(*mfigureeight, 2, mfecube, q);
 
             if(!cch) {
                 ERR_MSG("Error in computing the crux complex.");
@@ -151,6 +155,7 @@ int main(int argc, char* argv[])
             return EXIT_FAILURE;
         }
 
+        auto truelovercube = CruxCube::fromDiagram(*truelover,1);
         int qmin =
             - static_cast<int>(truelover->smoothing(0u).first)
             - static_cast<int>(truelover->nnegative())
@@ -162,7 +167,7 @@ int main(int argc, char* argv[])
 
         for(int q = qmin; q <= qmax; q+=2) {
             std::cout << "\e[33;1mq-degree: " << q << "\e[m" <<std::endl;
-            auto cch = cruxChain(*truelover, 1, q);
+            auto cch = cruxChain(*truelover, 1, truelovercube, q);
 
             if(!cch) {
                 ERR_MSG("Error in computing the crux complex.");

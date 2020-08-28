@@ -347,7 +347,10 @@ int main(int argc, char* argv[])
             + static_cast<int>(diagram->npositive())
             + diagram->writhe();
         for(int q = qmin; q <= qmax; q+=2) {
-            auto ch = khChain(*diagram, q);
+            auto ch = khChain(
+                *diagram,
+                SmoothCube::fromDiagram(*diagram),
+                q);
             if(!ch)
                 continue;
             std::cout << "q-degree: " << q << std::endl;
@@ -379,7 +382,11 @@ int main(int argc, char* argv[])
             + diagram->writhe();
 
         for(int q = qmin; q <= qmax; q+=2) {
-            auto ch = cruxChain(*diagram, target_crossing-1, q);
+            auto ch = cruxChain(
+                *diagram,
+                target_crossing-1,
+                CruxCube::fromDiagram(*diagram, target_crossing-1),
+                q);
             if(!ch)
                 continue;
             std::cout << "q-degree: " << q << std::endl;

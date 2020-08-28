@@ -12,9 +12,10 @@ int main (int argc, char* argv[])
     {
         auto trefoil = read_gauss_code(
             {1, -3, 2, -1, 3, -2}, {std::make_pair(1,false)});
+        auto trefoilcube = SmoothCube::fromDiagram(*trefoil);
 
         for(int q = -9; q < 0 ; ++q) {
-            auto ch = khover::khChain(*trefoil, q);
+            auto ch = khover::khChain(*trefoil, trefoilcube, q);
 
             if(q%2 == 0) {
                 if (ch) {
@@ -98,6 +99,7 @@ int main (int argc, char* argv[])
         auto six_two = read_gauss_code(
             {-1,4,-3,1,-2,6,-5,3,-4,2,-6,5},
             {std::make_pair(5,false)});
+        auto sixtwocube = SmoothCube::fromDiagram(*six_two);
 
         int qmin =
             - static_cast<int>(six_two->smoothing(0u).first)
@@ -110,7 +112,7 @@ int main (int argc, char* argv[])
 
         for(int q = qmin; q <= qmax; q+=2) {
             std::cout << "q-degree: " << q << std::endl;
-            auto ch = khChain(*six_two, q);
+            auto ch = khChain(*six_two, sixtwocube, q);
             if(!ch) {
                 ERR_MSG("Cannot compute homology: q=" << q);
                 return EXIT_FAILURE;

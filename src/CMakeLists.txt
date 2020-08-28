@@ -5,6 +5,7 @@ add_executable(
   main.cpp
   gausscode.cpp
   linkdiagram.cpp
+  cubes.cpp
   khovanov.cpp
 )
 

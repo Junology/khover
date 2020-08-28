@@ -203,21 +203,6 @@ public:
     std::pair<std::size_t,std::vector<component_t>>
     smoothing(state_t st) const noexcept;
 
-    //! Listing all smoothings.
-    //! \param state_on_cross A list of fixed states on crossings.
-    //! \retval smt For a *state* st, smt[st] carries the data of components in the smoothing according to st together with fixed states; here, by *state* we mean states on all crossings but ones with fixed states.
-    std::vector<smoothdata_t>
-    listSmoothings(
-        std::initializer_list<std::pair<std::size_t,bool>> const& state_on_cross = {})
-        const noexcept;
-
-    //! Listing all smoothings together with the data of twisted arcs.
-    //! In contrast to listSmoothings function, this function does not compute components for non-crux states and keep it empty.
-    //! \param state_on_cross A list of fixed states on crossings.
-    //! \retval smt For a *state* st, smt[st] carries the data of components in the smoothing according to st together with fixed states; here, by *state* we mean states on all crossings but ones with fixed states.
-    std::vector<smoothtwist_t>
-    listSmoothingsWithTwist(std::size_t dblpt) const noexcept;
-
     //! Determine which arcs are twisted in the crux complex.
     //! \param st A state on crossings except the double point. This implies that indices in the variable *st* may differ from those in the diagram in the case they have larger than that of the double point. To avoid this, one can ensure the double point has the largest index by using *swapCrossings* member function.
     //! \param dblpt The crossing which is regarded as a double point in the crux complex.
