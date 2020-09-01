@@ -279,6 +279,17 @@ public:
         }
     }
 
+    //! Shift operator in positive direction.
+    inline ChainIntegral& operator<<=(int r) noexcept {
+        m_mindeg += r;
+        return *this;
+    }
+
+    //! Shift operator in negative direction.
+    inline ChainIntegral& operator>>=(int r) noexcept {
+        return (*this) <<= (-r);
+    }
+
     /*!
      * Compute the homology groups.
      * \code
@@ -365,5 +376,18 @@ public:
             mindeg, std::move(diffs));
     }
 };
+
+//! \name shift operators
+//\{
+inline ChainIntegral operator<<(ChainIntegral ch, int r) noexcept
+{
+    return ch <<= r;
+}
+
+inline ChainIntegral operator>>(ChainIntegral ch, int r) noexcept
+{
+    return ch >>= r;
+}
+//\}
 
 } // end namespace khover
