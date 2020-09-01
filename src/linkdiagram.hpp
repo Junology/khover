@@ -26,6 +26,9 @@ namespace khover {
 //! It only contains minimum information for "state-sum" methods.
 class LinkDiagram {
 public:
+    using crossing_t = std::size_t;
+    using arc_t = unsigned int;
+
     //! The type representing each crossings.
     struct Crossing {
         //! A flag if the crossing is positive or not.
@@ -36,15 +39,18 @@ public:
         //!   - *adj_arc[2]* is the in-coming under-arc;
         //!   - *adj_arc[3]* is the out-going under-arc.
         //! Here the variable assumes arcs are indexed by unsigned integers.
-        unsigned int adj_arc[4];
+        arc_t adj_arc[4];
     };
 
-    using smoothdata_t = Smoothing<std::vector<component_t>>;
-    using smoothtwist_t = SmoothTw<std::vector<component_t>>;
-
 private:
+    //! The number of all arcs.
     std::size_t m_numarcs;
+
+    //! The list of crossings.
     std::vector<Crossing> m_cross;
+
+    //! The list of wide edges; i.e. crossings that are always smoothed horizontally (see Khovanov and Rozansky, "Matrix factorizations and link homology II").
+    std::vector<Crossing> m_wides{};
 
     // Be careful on the order of declarations.
     std::size_t m_numpositive;
@@ -129,11 +135,50 @@ public:
     //! \retval 0 Out-of-range.
     inline
     int
-    getSign(std::size_t c) const noexcept {
+    getSign(crossing_t c) const noexcept {
         return c < m_cross.size()
                    ? (m_cross[c].is_positive ? 1 : -1) : 0;
     }
 
+    //! Get the index of the upper-right arc.
+    inline
+    arc_t getURArc(crossing_t c) const noexcept {
+        return c < m_cross.size()
+                   ? (m_cross[c].is_positive
+                      ? m_cross[c].adj_arc[1]
+                      : m_cross[c].adj_arc[3])
+                   : std::numeric_limits<arc_t>::max();
+    }
+
+    //! Get the index of the upper-left arc.
+    inline
+    arc_t getULArc(crossing_t c) const noexcept {
+        return c < m_cross.size()
+                   ? (m_cross[c].is_positive
+                      ? m_cross[c].adj_arc[3]
+                      : m_cross[c].adj_arc[1])
+                   : std::numeric_limits<arc_t>::max();
+    }
+
+    //! Get the index of the lower-right arc.
+    inline
+    arc_t getDRArc(crossing_t c) const noexcept {
+        return c < m_cross.size()
+                   ? (m_cross[c].is_positive
+                      ? m_cross[c].adj_arc[2]
+                      : m_cross[c].adj_arc[0])
+                   : std::numeric_limits<arc_t>::max();
+    }
+
+    //! Get the index of the lower-left arc.
+    inline
+    arc_t getDLArc(crossing_t c) const noexcept {
+        return c < m_cross.size()
+                   ? (m_cross[c].is_positive
+                      ? m_cross[c].adj_arc[0]
+                      : m_cross[c].adj_arc[2])
+                   : std::numeric_limits<arc_t>::max();
+    }
     //\}
 
 
@@ -145,7 +190,7 @@ public:
     //! Swap two crossings.
     inline
     void
-    swapCrossings(std::size_t c0, std::size_t c1) noexcept {
+    swapCrossings(crossing_t c0, crossing_t c1) noexcept {
         if (c0 < m_cross.size() && c1 < m_cross.size() && c0 != c1)
             std::swap(m_cross[c0], m_cross[c1]);
     }
@@ -153,7 +198,7 @@ public:
     //! Crossing change
     inline
     void
-    crossingChange(std::size_t c) noexcept {
+    crossingChange(crossing_t c) noexcept {
         if (c < m_cross.size())
             m_cross[c].is_positive ^= true;
     }
@@ -161,7 +206,7 @@ public:
     //! Make a crossing positive.
     inline
     void
-    makePositive(std::size_t c) noexcept {
+    makePositive(crossing_t c) noexcept {
         if (c < m_cross.size())
             m_cross[c].is_positive = true;
     }
@@ -169,18 +214,37 @@ public:
     //! Make a crossing negative.
     inline
     void
-    makeNegative(std::size_t c) noexcept {
+    makeNegative(crossing_t c) noexcept {
         if (c < m_cross.size())
             m_cross[c].is_positive = false;
     }
 
+    //! Vertical smoothing; i.e. the smoothing along the orientation.
+    //! As some arcs are merged, the indexing on arcs, as well as those on crossings, may be changed.
+    //! \remark This function may create an isolated circle.
+    //! \warning This operation actually removes a crossing and hence is non-invertible.
+    void makeSmoothV(crossing_t c) noexcept;
+
+    //! Make a crossing into a "wide edge" (see [Khovanov and Rozansky]).
+    //! \remark Although essentially no information is lost with this function, there is currently no way to recover the crossing.
+    inline void makeWide(crossing_t c) noexcept
+    {
+        if (c < m_cross.size()) {
+            m_wides.push_back(m_cross[c]);
+            if(m_cross[c].is_positive)
+                --m_numpositive;
+            else
+                --m_numnegative;
+            m_cross.erase(std::next(std::begin(m_cross), c));
+        }
+    }
     //\}
 
 
     /*!
      * \name State manipulation.
      */
-    //\{
+    //!\{
     //! Compute the cohomological degrees of a given state in the convention of the following article:
     //! Clark, David; Morrison, Scott; Walker, Kevin. Fixing the functoriality of Khovanov homology. Geom. Topol. 13 (2009), no.3, 1499--1582. doi:10.2140/gt.2009.13.1499.
     inline
@@ -212,7 +276,32 @@ public:
     //! Otherwise, std::nullopt;
     std::optional<std::pair<state_t,std::bitset<max_arcs>>>
     cruxTwists(state_t st, std::size_t dblpt) const noexcept;
-    //\}
+    //!\}
+
+protected:
+    //! \name Miscellaneous functions used for implementations.
+    //!\{
+
+    //! Merge arcs
+    inline bool mergeArcs(arc_t arc1, arc_t arc2) noexcept {
+        if (arc1 == arc2 || arc1 >= m_numarcs || arc2 >= m_numarcs)
+            return false;
+
+        auto [arcmin,arcmax] = arc1 < arc2
+            ? std::make_pair(arc1,arc2)
+            : std::make_pair(arc2,arc1);
+        for(auto& crs : m_cross) {
+            for(std::size_t i = 0; i < 4; ++i) {
+                if (crs.adj_arc[i] == arcmax)
+                    crs.adj_arc[i] = arcmin;
+                else if(crs.adj_arc[i] > arcmax)
+                    --(crs.adj_arc[i]);
+            }
+        }
+        --m_numarcs;
+        return true;
+    }
+    //!\}
 };
 
 //! Type used to represent Gauss codes.

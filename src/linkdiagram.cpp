@@ -10,6 +10,8 @@
 #include <algorithm>
 #include "linkdiagram.hpp"
 
+#include "utils.hpp"
+
 #include "debug/debug.hpp"
 
 using namespace khover;
@@ -81,6 +83,28 @@ int LinkDiagram::stateCoeff(state_t st_before, state_t st_after)
     return sign ? -1 : 1;
 }
 
+// Vertical smoothing; i.e. smoothing along the orientation.
+void
+khover::LinkDiagram::makeSmoothV(crossing_t c) noexcept
+{
+    // Bound check.
+    if (c >= m_cross.size())
+        return;
+
+    // Merge arcs
+    mergeArcs(m_cross[c].adj_arc[0], m_cross[c].adj_arc[3]);
+    mergeArcs(m_cross[c].adj_arc[1], m_cross[c].adj_arc[2]);
+
+    // Remove the crossing
+    if(m_cross[c].is_positive)
+        --m_numpositive;
+    else
+        --m_numnegative;
+
+    m_cross.erase(std::next(std::begin(m_cross),c));
+}
+
+
 // Compute the connected components in the smoothing of the diagram corresponding to a given state.
 std::pair<std::size_t, std::vector<component_t>>
 khover::LinkDiagram::smoothing(state_t st)
@@ -94,6 +118,15 @@ khover::LinkDiagram::smoothing(state_t st)
         result[i] = i;
     }
 
+    // Smoothing on wide edges.
+    for(auto& w : m_wides) {
+        if (auto rmc = merge_components(result, w.adj_arc[0], w.adj_arc[2]); rmc)
+            index_rmed.set(*rmc);
+        if (auto rmc = merge_components(result, w.adj_arc[1], w.adj_arc[3]); rmc)
+            index_rmed.set(*rmc);
+    }
+
+    // Smoothing of crossings.
     for(std::size_t i = 0; i < m_cross.size(); ++i) {
         // state=1 on positive or state=0 on negative
         if(m_cross[i].is_positive == st.test(i)) {
@@ -127,7 +160,7 @@ khover::LinkDiagram::smoothing(state_t st)
         }
     }
 
-    // re-labeling the components so that indices are consequtive.
+    // re-labeling the components so that indices are consecutive.
     for(auto& cind : result) {
         cind -= (index_rmed & low_window<max_components>(cind)).count();
     }

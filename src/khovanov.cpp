@@ -25,23 +25,13 @@ using matrix_t = ChainIntegral::matrix_t;
 /******************************
  *** Enhancement properties ***
  ******************************/
-//! The type carrying the data of enhancements on each state.
-struct EnhancementProperty {
-    //! The index of the first enhancement on a state among a certain (co)homological degree.
-    matrix_t::Index headidx;
-
-    //! The number of 'x' in the enhancements.
-    //! This might be negative or exceed the number of components in case no enhancement is allowed in the q-degree.
-    int xcnt = -1;
-};
-
-template <class T>
+template <template <class...> class C>
 static
 std::optional<std::vector<EnhancementProperty>>
 get_enhancement_prop(
     LinkDiagram const& diagram,
     //std::vector<T> const& smoothData,
-    T const& smoothData,
+    Cube<C> const& cube,
     int qdeg)
 {
     /*
@@ -50,37 +40,38 @@ get_enhancement_prop(
     */
 
     std::vector<EnhancementProperty> result{};
-    result.reserve(smoothData.size());
-    for(std::size_t st = 0; st < smoothData.size(); ++st) {
+    result.reserve(cube.size());
+    for(std::size_t st = 0; st < cube.size(); ++st) {
         matrix_t::Index headidx = 0;
 
         if(bitsIndex(state_t{st}) > 0) {
             auto st_pred = predWithPop(state_t{st}).to_ulong();
             headidx = result[st_pred].headidx
-                + binom(smoothData[st_pred].ncomp, result[st_pred].xcnt);
+                + binom(cube[st_pred].ncomp, result[st_pred].xcnt);
         }
 
         // In case where component data is not provided
-        if (smoothData[st].arccomp.empty()) {
+        if (cube[st].arccomp.empty()) {
             result.push_back({headidx, -1});
             continue;
         }
 
         // Compute the degree.
         int deg = qdeg - diagram.writhe()
-            - diagram.cohDegree(smoothData[st].state);
+            - diagram.cohDegree(cube[st].state);
 
         // Parity check
-        if ((smoothData[st].ncomp - deg)%2 != 0)
+        if ((cube[st].ncomp - deg)%2 != 0)
             return std::nullopt;
 
         // Append the result
         result.push_back(
-            {headidx, (static_cast<int>(smoothData[st].ncomp) - deg)/2});
+            {headidx, (static_cast<int>(cube[st].ncomp) - deg)/2});
     }
 
     return std::make_optional(std::move(result));
 }
+
 
 /*******************************************
  *** Multiplication and comultiplication ***
@@ -193,10 +184,9 @@ khover::khChain(
         matrix_t(
             0, binom(cube.back().ncomp, enh_prop.back().xcnt)));
     for(int i = cube.dim(); i > 0; --i) {
-        std::size_t maxst_cod
-            = (low_window<max_crosses>(i)<<(diagram.ncrosses()-i)).to_ullong();
-        std::size_t maxst_dom
-            = (low_window<max_crosses>(i-1)<<(diagram.ncrosses()-i+1)).to_ullong();
+        std::size_t maxst_cod = cube.maxState(i).to_ulong();
+        std::size_t maxst_dom = cube.maxState(i-1).to_ulong();
+
         matrix_t diffmat = matrix_t::Zero(
             enh_prop[maxst_cod].headidx
             + binom(cube[maxst_cod].ncomp, enh_prop[maxst_cod].xcnt),
@@ -304,10 +294,8 @@ khover::cruxChain(
         );
 
     for(int i = diagram.ncrosses()-1; i > 0; --i) {
-        std::size_t maxst_cod
-            = (low_window<max_crosses>(i)<<(diagram.ncrosses()-i-1)).to_ullong();
-        std::size_t maxst_dom
-            = (low_window<max_crosses>(i-1)<<(diagram.ncrosses()-i)).to_ullong();
+        std::size_t maxst_cod = cube.maxState(i).to_ulong();
+        std::size_t maxst_dom = cube.maxState(i-1).to_ulong();
         matrix_t diffmat = matrix_t::Zero(
             enh_prop[maxst_cod].headidx
             + binom(cube[maxst_cod].ncomp, enh_prop[maxst_cod].xcnt),

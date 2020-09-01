@@ -14,27 +14,27 @@ int main(int argc, char* argv[])
         {std::make_pair(1,false)});
 
     if(!six_two) {
-        std::cerr << "Failed to load a knot." << std::endl;
-        return -1;
+        ERR_MSG("Failed to load a knot.");
+        return EXIT_FAILURE;
     }
 
     if (six_two->nnegative() != 4) {
-        std::cerr << "Wrong number of negative crossings: "
-                  << six_two->nnegative() << " should be " << 4 << std::endl;
-        return -1;
+        ERR_MSG("Wrong number of negative crossings: "
+                << six_two->nnegative() << " should be " << 4);
+        return EXIT_FAILURE;
     }
 
     if (six_two->npositive() != 2) {
-        std::cerr << "Wrong number of positive crossings: "
-                  << six_two->npositive() << " should be " << 2 << std::endl;
-        return -1;
+        ERR_MSG("Wrong number of positive crossings: "
+                << six_two->npositive() << " should be " << 2);
+        return EXIT_FAILURE;
     }
 
     for(unsigned long s = 0; s < 0b1000000 ; ++s) {
         if(six_two->cohDegree(s) != static_cast<int>(std::bitset<6>(s).count()) - 4)
         {
-            std::cerr << "Wrong cohomological degree for " << std::bitset<6>(s) << std::endl;
-            return -1;
+            ERR_MSG("Wrong cohomological degree for " << std::bitset<6>(s));
+            return EXIT_FAILURE;
         }
     }
 
@@ -44,13 +44,10 @@ int main(int argc, char* argv[])
         std::vector<unsigned char> shouldbe = {0, 1, 2, 3, 4, 0, 1, 3, 2, 1, 3, 4};
 
         if (ncomp != 5
-            || !std::equal(comptbl.begin(), comptbl.end(), shouldbe.begin())) {
-            std::cerr << "Wrong components:" << std::endl;
-            for(auto c : comptbl) {
-                std::cout << static_cast<int>(c) << "; ";
-            }
-            std::cout << std::endl;
-            return -1;
+            || !std::equal(comptbl.begin(), comptbl.end(), shouldbe.begin()))
+        {
+            ERR_MSG("Wrong components:" << comptbl);
+            return EXIT_FAILURE;
         }
     }
 
@@ -60,13 +57,10 @@ int main(int argc, char* argv[])
         std::vector<unsigned char> shouldbe = {0, 1, 2, 3, 0, 0, 1, 3, 2, 1, 3, 0};
 
         if (ncomp != 4
-            || !std::equal(comptbl.begin(), comptbl.end(), shouldbe.begin())) {
-            std::cerr << "Wrong components:" << std::endl;
-            for(auto c : comptbl) {
-                std::cout << static_cast<int>(c) << "; ";
-            }
-            std::cout << std::endl;
-            return -1;
+            || !std::equal(comptbl.begin(), comptbl.end(), shouldbe.begin()))
+        {
+            ERR_MSG("Wrong components:" << comptbl);
+            return EXIT_FAILURE;
         }
     }
 
@@ -76,18 +70,12 @@ int main(int argc, char* argv[])
         std::vector<unsigned char> shouldbe = {0, 0, 1, 2, 3, 0, 0, 2, 1, 0, 2, 3};
 
         if (ncomp != 4
-            || !std::equal(comptbl.begin(), comptbl.end(), shouldbe.begin())) {
-            std::cerr << "Wrong components:" << std::endl;
-            for(auto c : comptbl) {
-                std::cerr << static_cast<int>(c) << "; ";
-            }
-            std::cerr << std::endl;
-            std::cerr << "Shouldbe:" << std::endl;
-            for(auto c : shouldbe) {
-                std::cerr << static_cast<int>(c) << "; ";
-            }
-            std::cerr << std::endl;
-            return -1;
+            || !std::equal(comptbl.begin(), comptbl.end(), shouldbe.begin()))
+        {
+            ERR_MSG(
+                "Wrong components:" << comptbl << "\n"
+                << "Shouldbe:" << shouldbe);
+            return EXIT_FAILURE;
         }
     }
 
@@ -97,13 +85,47 @@ int main(int argc, char* argv[])
         std::vector<unsigned char> shouldbe = {0, 0, 1, 2, 0, 0, 0, 2, 1, 0, 2, 0};
 
         if (ncomp != 3
+            || !std::equal(comptbl.begin(), comptbl.end(), shouldbe.begin()))
+        {
+            ERR_MSG("Wrong components:" << comptbl);
+            return EXIT_FAILURE;
+        }
+    }
+
+    // Smoothing after V-smoothing
+    {
+        LinkDiagram aux = *six_two;
+        aux.makeSmoothV(5);
+        aux.makeSmoothV(4);
+        if(aux.ncrosses() != 4 || aux.narcs() != 9) {
+            ERR_MSG("Wrong number of crossings/components:\n"
+                    << "(ncrx,narc)="
+                    << std::make_pair(aux.ncrosses(), aux.narcs()));
+            return EXIT_FAILURE;
+        }
+        auto [ncomp, comptbl] = aux.smoothing(0b000000u);
+        std::vector<unsigned char> shouldbe = {0, 1, 2, 3, 4, 0, 1, 3, 4};
+
+        if (ncomp != 5
             || !std::equal(comptbl.begin(), comptbl.end(), shouldbe.begin())) {
-            std::cerr << "Wrong components:" << std::endl;
-            for(auto c : comptbl) {
-                std::cout << static_cast<int>(c) << "; ";
-            }
-            std::cout << std::endl;
-            return -1;
+            ERR_MSG("Wrong components:" << comptbl);
+            return EXIT_FAILURE;
+        }
+    }
+
+    // Smoothing with wide edges
+    {
+        LinkDiagram aux = *six_two;
+
+        aux.makeWide(2);
+        aux.makeWide(1);
+        auto [ncomp, comptbl] = aux.smoothing(0b0000u);
+        std::vector<unsigned char> shouldbe = {0, 1, 2, 3, 4, 0, 1, 3, 2, 1, 3, 4};
+
+        if (ncomp != 5
+            || !std::equal(comptbl.begin(), comptbl.end(), shouldbe.begin())) {
+            ERR_MSG("Wrong components:" << comptbl);
+            return EXIT_FAILURE;
         }
     }
 

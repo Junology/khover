@@ -51,6 +51,16 @@ public:
 
     inline auto size() const noexcept { return m_smoothdata.size(); }
     inline auto dim() const noexcept { return m_dim; }
+
+    inline state_t minState(std::size_t popcnt) const noexcept {
+        popcnt = std::min(popcnt, m_dim);
+        return low_window<max_crosses>(popcnt > m_dim ? m_dim : popcnt);
+    }
+
+    inline state_t maxState(std::size_t popcnt) const noexcept {
+        popcnt = std::min(popcnt, m_dim);
+        return low_window<max_crosses>(popcnt)<<(m_dim-popcnt);
+    }
 };
 
 //! The class for cubes of ordinary smoothings.

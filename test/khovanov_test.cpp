@@ -94,6 +94,154 @@ int main (int argc, char* argv[])
         }
     }
 
+    // Figure-eight knot
+    {
+        auto fig8 = read_gauss_code(
+            {1,-3,4,-1,2,-4,3,-2},
+            {std::make_pair(3,false)}
+            );
+
+        if(!fig8) {
+            ERR_MSG("Failed to load the figure-eight knot.");
+            return EXIT_FAILURE;
+        }
+
+        auto fig8cube = SmoothCube::fromDiagram(*fig8);
+
+        for(int q = -5; q <= 5; ++q) {
+            auto ch = khChain(*fig8, fig8cube, q);
+            if((q%2==0 && ch) || (q%2!=0 && !ch)) {
+                ERR_MSG("Illegal cohomology: q=" << q);
+                return EXIT_FAILURE;
+            }
+            else if (q%2==0)
+                continue;
+
+            auto h = ch->compute();
+
+            for(int i = -ch->maxdeg(); i <= -ch->mindeg(); ++i) {
+                if(auto kh = h[-i-ch->mindeg()].compute();
+                   (i==-2 && q==-5 && (kh.freerank != 1 ||
+                                       !kh.torsions.empty()))
+                   || (i==-2 && q!=-5
+                       && (kh.freerank != 0
+                                          || !kh.torsions.empty()))
+                   || (i==-1 && q==-3 && (kh.freerank != 0
+                                          || kh.torsions.size() != 1
+                                          || kh.torsions[0] != 2))
+                   || (i==-1 && q==-1 && (kh.freerank != 1
+                                          || !kh.torsions.empty()))
+                   || (i==-1 && q!=-3 && q!=-1 && (kh.freerank != 0
+                                                   || !kh.torsions.empty()))
+                   || (i==0 && std::abs(q)==1 && (kh.freerank != 1
+                                                  || !kh.torsions.empty()))
+                   || (i==0 && std::abs(q)!=1 && (kh.freerank != 0
+                                                  || !kh.torsions.empty()))
+                   || (i==1 && q==1 && (kh.freerank != 1 || !kh.torsions.empty()))
+                   || (i==1 && q!=1 && (kh.freerank != 0 || !kh.torsions.empty()))
+                   || (i==2 && q==3 && (kh.freerank != 0
+                                        || kh.torsions.size() != 1
+                                        || kh.torsions[0] != 2))
+                   || (i==2 && q==5 && (kh.freerank != 1 || !kh.torsions.empty()))
+                   || (i==2 && q!=3 && q!= 5 && (kh.freerank != 0
+                                                 || !kh.torsions.empty())))
+                {
+                    ERR_MSG("Wrong cohomology group (i,q)="
+                            << std::make_pair(i,q) << ":\n"
+                            << kh.pretty());
+                    return EXIT_FAILURE;
+                }
+            }
+        }
+    }
+
+    // Figure-eight knot with V-smoothings.
+    {
+        auto fig8V = read_gauss_code(
+            {1,-3,4,-1,2,-4,3,-2},
+            {std::make_pair(3,false)}
+            );
+
+        if(!fig8V) {
+            ERR_MSG("Failed to load the figure-eight knot.");
+            return EXIT_FAILURE;
+        }
+
+        fig8V->makeSmoothV(3);
+        fig8V->makeSmoothV(2);
+        // Now, fig8V = (positive Hopf link) + (unknot)
+
+        auto fig8Vcube = SmoothCube::fromDiagram(*fig8V);
+
+        for(int q = -1; q <= 7; ++q) {
+            auto ch = khChain(*fig8V, fig8Vcube, q);
+            if((q%2==0 && ch) || (q%2!=0 && !ch)) {
+                ERR_MSG("Illegal homology: q=" << q);
+                return EXIT_FAILURE;
+            }
+            else if (q%2==0)
+                continue;
+
+            auto h = ch->compute();
+            for(int i=-ch->maxdeg(); i <= -ch->mindeg(); ++i) {
+                if(auto kh = h[-i-ch->mindeg()].compute();
+                   !kh.torsions.empty()
+                   || (i==0 && (q==-1 || q==3) && kh.freerank != 1)
+                   || (i==0 && q==1 && kh.freerank != 2)
+                   || (i==0 && q!=-1 && q!=1 && q!=3 && kh.freerank != 0)
+                   || (i==1 && kh.freerank != 0)
+                   || (i==2 && (q==3 || q==7) && kh.freerank != 1)
+                   || (i==2 && q==5 && kh.freerank != 2)
+                   || (i==2 && q!=3 && q!= 5 && q!= 7 && kh.freerank != 0))
+                {
+                    ERR_MSG("Wrong cohomology group (i,q)="
+                            << std::make_pair(i,q) << ":\n"
+                            << kh.pretty());
+                    return EXIT_FAILURE;
+                }
+            }
+        }
+    }
+
+    // Figure-eight knot with some crossings replaced with wide edges.
+    {
+        auto fig8W = read_gauss_code(
+            {1,-3,4,-1,2,-4,3,-2},
+            {std::make_pair(3,false)}
+            );
+
+        if(!fig8W) {
+            ERR_MSG("Failed to load the figure-eight knot.");
+            return EXIT_FAILURE;
+        }
+
+        fig8W->makeWide(1);
+        fig8W->makeWide(0);
+        // Now, fig8W = (unknot)
+
+        auto fig8Wcube = SmoothCube::fromDiagram(*fig8W);
+
+        for(int q = -1; q <= 1; ++q) {
+            auto ch = khChain(*fig8W, fig8Wcube, q);
+            if((q==0 && ch) || (q!=0 && !ch)) {
+                ERR_MSG("Illegal homology: q=" << q);
+                return EXIT_FAILURE;
+            }
+            else if (q==0)
+                continue;
+
+            auto h = ch->compute();
+            auto kh = h[0-ch->mindeg()].compute();
+            if(kh.freerank != 1 || !kh.torsions.empty())
+            {
+                ERR_MSG("Wrong cohomology group (i,q)="
+                        << std::make_pair(0,q) << ":\n"
+                        << kh.pretty());
+                return EXIT_FAILURE;
+            }
+        }
+    }
+
     // 6_2 knot
     {
         auto six_two = read_gauss_code(

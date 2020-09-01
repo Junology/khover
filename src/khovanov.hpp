@@ -17,6 +17,17 @@
 
 namespace khover {
 
+//! The type carrying the data of enhancements on each state.
+struct EnhancementProperty {
+    //! The index of the first enhancement on a state among a certain (co)homological degree.
+    ChainIntegral::matrix_t::Index headidx;
+
+    //! The number of 'x' in the enhancements.
+    //! This might be negative or exceed the number of components in case no enhancement is allowed in the q-degree.
+    int xcnt = -1;
+};
+
+
 //! Compute Khovanov complex of a given link diagram.
 //! \param diagram The target diagram.
 //! \cube This must be the value of SmoothCube::fromDiagram function for *diagram*.
@@ -38,5 +49,9 @@ cruxChain(
     std::size_t dblpt,
     CruxCube const& cube,
     int qdeg) noexcept;
+
+//! The morphism Xi whose mapping cone is the first Vassiliev derivative of the Khovanov homology.
+std::optional<ChainIntegral::Hom>
+cruxXi(LinkDiagram diagram, std::size_t dblpt, int qdeg) noexcept;
 
 } // end namespace khover
