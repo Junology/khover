@@ -346,11 +346,10 @@ int main(int argc, char* argv[])
             static_cast<int>(diagram->smoothing(~state_t(0u)).first)
             + static_cast<int>(diagram->npositive())
             + diagram->writhe();
+        auto cube = SmoothCube::fromDiagram(*diagram);
         for(int q = qmin; q <= qmax; q+=2) {
-            auto ch = khChain(
-                *diagram,
-                SmoothCube::fromDiagram(*diagram),
-                q);
+            auto enh_prop = get_enhancement_prop(*diagram, cube, q);
+            auto ch = enh_prop ? khChain(*diagram, cube, *enh_prop) : std::nullopt;
             if(!ch)
                 continue;
             std::cout << "q-degree: " << q << std::endl;
@@ -381,12 +380,14 @@ int main(int argc, char* argv[])
             + static_cast<int>(diagram->npositive())
             + diagram->writhe();
 
+        auto cube = CruxCube::fromDiagram(*diagram, target_crossing-1);
         for(int q = qmin; q <= qmax; q+=2) {
-            auto ch = cruxChain(
-                *diagram,
-                target_crossing-1,
-                CruxCube::fromDiagram(*diagram, target_crossing-1),
-                q);
+            auto enh_prop = get_enhancement_prop(
+                *diagram, cube,
+                diagram->getSign(target_crossing-1) > 0 ? q : q-2);
+            auto ch = enh_prop
+                ? cruxChain(*diagram, target_crossing-1, cube, *enh_prop)
+                : std::nullopt;
             if(!ch)
                 continue;
             std::cout << "q-degree: " << q << std::endl;

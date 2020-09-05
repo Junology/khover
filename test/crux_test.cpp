@@ -33,7 +33,12 @@ int main(int argc, char* argv[])
 
         for(int q = qmin; q <= qmax; q+=2) {
             std::cout << "\e[33;1mq-degree: " << q << "\e[m" <<std::endl;
-            auto cch = cruxChain(*figureeight, 2, fecube, q);
+            auto enh_prop = get_enhancement_prop(
+                *figureeight, fecube,
+                figureeight->getSign(2) > 0 ? q : q-2);
+            auto cch = enh_prop
+                ? cruxChain(*figureeight, 2, fecube, *enh_prop)
+                : std::nullopt;
 
             if(!cch) {
                 ERR_MSG("Error in computing the crux complex.");
@@ -101,7 +106,12 @@ int main(int argc, char* argv[])
 
         for(int q = qmin; q <= qmax; q+=2) {
             std::cout << "\e[33;1mq-degree: " << q << "\e[m" <<std::endl;
-            auto cch = cruxChain(*mfigureeight, 2, mfecube, q);
+            auto enh_prop = get_enhancement_prop(
+                *mfigureeight, mfecube,
+                mfigureeight->getSign(2) > 0 ? q : q-2);
+            auto cch = enh_prop
+                ? cruxChain(*mfigureeight, 2, mfecube, *enh_prop)
+                : std::nullopt;
 
             if(!cch) {
                 ERR_MSG("Error in computing the crux complex.");
@@ -167,7 +177,12 @@ int main(int argc, char* argv[])
 
         for(int q = qmin; q <= qmax; q+=2) {
             std::cout << "\e[33;1mq-degree: " << q << "\e[m" <<std::endl;
-            auto cch = cruxChain(*truelover, 1, truelovercube, q);
+            auto enh_prop = get_enhancement_prop(
+                *truelover, truelovercube,
+                truelover->getSign(1) > 0 ? q : q-2);
+            auto cch = enh_prop
+                ? cruxChain(*truelover, 1, truelovercube, *enh_prop)
+                : std::nullopt;
 
             if(!cch) {
                 ERR_MSG("Error in computing the crux complex.");

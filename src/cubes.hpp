@@ -20,13 +20,15 @@ template <template <class...> class C>
 class Cube {
 public:
     using smoothdata_t = C<std::vector<component_t>>;
+    using degree_t = std::int64_t;
 
 protected:
+    degree_t m_mincohdeg;
     std::size_t m_dim;
     std::vector<smoothdata_t> m_smoothdata{};
 
-    Cube(std::size_t dim)
-        : m_dim(dim)
+    Cube(degree_t mincohdeg, std::size_t dim)
+        : m_mincohdeg(mincohdeg), m_dim(dim)
     {
         m_smoothdata.reserve(cipow(2,dim));
     }
@@ -60,6 +62,15 @@ public:
     inline state_t maxState(std::size_t popcnt) const noexcept {
         popcnt = std::min(popcnt, m_dim);
         return low_window<max_crosses>(popcnt)<<(m_dim-popcnt);
+    }
+
+    inline degree_t mincohdeg() const noexcept { return m_mincohdeg; }
+    inline degree_t maxcohdeg() const noexcept {
+        return m_mincohdeg + static_cast<degree_t>(m_dim);
+    }
+
+    inline degree_t cohdegree(state_t st) const noexcept {
+        return m_mincohdeg + static_cast<degree_t>(st.count());
     }
 };
 

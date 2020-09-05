@@ -167,7 +167,16 @@ insertBit(std::bitset<n> const& bs, std::size_t pos, bool flag)
 {
     return (bs & low_window<n>(pos))
         | (std::bitset<n>{static_cast<unsigned long>(flag)} << pos)
-        | ((bs & ~low_window<max_crosses>(pos)) << 1);
+        | ((bs & ~low_window<n>(pos)) << 1);
+}
+
+template<std::size_t n>
+inline
+std::bitset<n>
+purgeBit(std::bitset<n> const& bs, std::size_t pos)
+{
+    return (bs & low_window<n>(pos))
+        | (bs & ~low_window<n>(pos+1)) >> 1;
 }
 
 } // end namespace khover

@@ -199,24 +199,38 @@ public:
     inline
     void
     crossingChange(crossing_t c) noexcept {
-        if (c < m_cross.size())
-            m_cross[c].is_positive ^= true;
+        if (c < m_cross.size()) {
+            if(m_cross[c].is_positive ^= true) {
+                --m_numnegative;
+                ++m_numpositive;
+            }
+            else {
+                ++m_numnegative;
+                --m_numpositive;
+            }
+        }
     }
 
     //! Make a crossing positive.
     inline
     void
     makePositive(crossing_t c) noexcept {
-        if (c < m_cross.size())
+        if (c < m_cross.size() && !m_cross[c].is_positive) {
             m_cross[c].is_positive = true;
+            --m_numnegative;
+            ++m_numpositive;
+        }
     }
 
     //! Make a crossing negative.
     inline
     void
     makeNegative(crossing_t c) noexcept {
-        if (c < m_cross.size())
+        if (c < m_cross.size() && m_cross[c].is_positive) {
             m_cross[c].is_positive = false;
+            ++m_numnegative;
+            --m_numpositive;
+        }
     }
 
     //! Vertical smoothing; i.e. the smoothing along the orientation.

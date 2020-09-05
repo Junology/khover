@@ -1,3 +1,4 @@
+
 /*!
  * \file chaincomplex.hpp
  * \author Jun Yoshida
@@ -70,7 +71,7 @@ public:
 
         Hom(int mindeg, std::vector<matrix_t> &&morphs) noexcept
             : m_morphs(
-                std::in_place_t{},
+                std::in_place,
                 mindeg,
                 std::move(morphs))
         {}
@@ -80,6 +81,16 @@ public:
 
         Hom& operator=(Hom const&) = default;
         Hom& operator=(Hom &&) noexcept = default;
+
+        Hom& operator<<=(int r) noexcept {
+            if(m_morphs)
+                m_morphs->first += r;
+            return *this;
+        }
+
+        Hom& operator>>=(int r) noexcept {
+            return (*this)<<=(-r);
+        }
 
         inline int mindeg() const noexcept {
             return m_morphs
@@ -93,7 +104,7 @@ public:
         }
 
         inline matrix_t const& morphism(int i) const noexcept {
-            return m_morphs && i-mindeg() >= 0 && i-mindeg() <= maxdeg()
+            return m_morphs && i >= mindeg() && i <= maxdeg()
                 ? m_morphs->second[i-mindeg()]
                 : constants<coeff_t>::empty_matrix;
         }
@@ -332,6 +343,16 @@ public:
         return result;
     }
 
+    //! Regard the differential as a morphism of chain complexes as d:C -> C[1]', here C[-1]' is a shift of C with the "untwisted" differential.
+    Hom diffAsHom() const noexcept {
+        std::vector<matrix_t> maps{};
+        maps.push_back(getDiff(m_mindeg-1));
+        std::copy(
+            std::begin(m_diffs), std::end(m_diffs),
+            std::back_inserter(maps));
+        return Hom(m_mindeg, std::move(maps));
+    }
+
     /*!
      * Taking the mapping cone
      */
@@ -387,6 +408,16 @@ inline ChainIntegral operator<<(ChainIntegral ch, int r) noexcept
 inline ChainIntegral operator>>(ChainIntegral ch, int r) noexcept
 {
     return ch >>= r;
+}
+
+inline ChainIntegral::Hom operator<<(ChainIntegral::Hom hom, int r) noexcept
+{
+    return hom <<= r;
+}
+
+inline ChainIntegral::Hom operator>>(ChainIntegral::Hom hom, int r) noexcept
+{
+    return hom >>= r;
 }
 //\}
 

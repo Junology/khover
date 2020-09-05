@@ -28,7 +28,9 @@ SmoothCube::fromDiagram(
         } );
 
     // The number of all states on crossings with no state fixed.
-    SmoothCube result(diagram.ncrosses() - fixmap.size());
+    SmoothCube result(
+        -static_cast<int>(diagram.nnegative()),
+        diagram.ncrosses() - fixmap.size());
     std::size_t nstates = cipow(2,result.dim());
 
     // Compute the smoothing on each state.
@@ -51,9 +53,13 @@ SmoothCube::fromDiagram(
 CruxCube
 CruxCube::fromDiagram(const LinkDiagram &diagram, std::size_t dblpt) noexcept
 {
-    CruxCube result(dblpt < diagram.ncrosses()
-                    ? diagram.ncrosses()-1
-                    : diagram.ncrosses());
+    CruxCube result = (dblpt < diagram.ncrosses() && diagram.getSign(dblpt))
+        ? CruxCube(
+            -static_cast<int>(diagram.nnegative())+1,
+            diagram.ncrosses()-1)
+        : CruxCube(
+            -static_cast<int>(diagram.nnegative()),
+            diagram.ncrosses());
 
     // The number of all states on crossings with no state fixed.
     std::size_t nstates = cipow(2,result.dim());

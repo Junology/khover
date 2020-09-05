@@ -15,26 +15,29 @@ int main (int argc, char* argv[])
         auto trefoilcube = SmoothCube::fromDiagram(*trefoil);
 
         for(int q = -9; q < 0 ; ++q) {
-            auto ch = khover::khChain(*trefoil, trefoilcube, q);
+            auto enh_prop = get_enhancement_prop(*trefoil, trefoilcube, q);
+            auto ch = enh_prop
+                ? khover::khChain(*trefoil, trefoilcube, *enh_prop)
+                : std::nullopt;
 
             if(q%2 == 0) {
                 if (ch) {
                     ERR_MSG("Non-trivial complex in illegal quantum degrees.");
-                    return -1;
+                    return EXIT_FAILURE;
                 }
                 continue;
             }
 
             if(!ch) {
                 ERR_MSG("Failed to compute Khovanov homology of the trefiol");
-                return -1;
+                return EXIT_FAILURE;
             }
 
             auto h = ch->compute();
 
             if(h.size() != 5) {
                 ERR_MSG("Wrong number of cohomology groups.");
-                return -1;
+                return EXIT_FAILURE;
             }
 
             if(auto h0 = h[0].compute();
@@ -44,7 +47,7 @@ int main (int argc, char* argv[])
                     "Incorrect 1st cohomology groups: (deg,qdeg)=("
                     << -ch->mindeg() << "," << q
                     << ")");
-                return -1;
+                return EXIT_FAILURE;
             }
             if(auto h1 = h[1].compute();
                ((q==-1 || q==-3) && (h1.freerank != 1 || !h1.torsions.empty()))
@@ -54,7 +57,7 @@ int main (int argc, char* argv[])
                     "Incorrect 0th cohomology groups: (deg,qdeg)=("
                     << -ch->mindeg()-1 << "," << q
                     << ")");
-                return -1;
+                return EXIT_FAILURE;
             }
             if(auto h2 = h[2].compute();
                h2.freerank != 0 || !h2.torsions.empty())
@@ -63,7 +66,7 @@ int main (int argc, char* argv[])
                     "Incorrect -1st cohomology groups: (deg,qdeg)=("
                     << -ch->mindeg()-2 << "," << q
                     << ")");
-                return -1;
+                return EXIT_FAILURE;
             }
             if(auto h3 = h[3].compute();
                (q==-5 && (h3.freerank != 1 || !h3.torsions.empty()))
@@ -79,7 +82,7 @@ int main (int argc, char* argv[])
                     << ")\n"
                     << h3.pretty()
                     );
-                return -1;
+                return EXIT_FAILURE;
             }
             if(auto h4 = h[4].compute();
                (q==-9 && (h4.freerank != 1 || !h4.torsions.empty()))
@@ -90,6 +93,49 @@ int main (int argc, char* argv[])
                     << -ch->mindeg()-4 << "," << q
                     << ")");
                 return EXIT_FAILURE;
+            }
+        }
+    }
+
+    // Unknot obtained by change the 0-th crossing in the trefoil.
+    {
+        auto trefoil = read_gauss_code(
+            {1, -3, 2, -1, 3, -2}, {std::make_pair(1,false)});
+        trefoil->makePositive(0);
+        auto trefoilcube = SmoothCube::fromDiagram(*trefoil);
+
+        for(int q = -9; q <= 1 ; ++q) {
+            auto enh_prop = get_enhancement_prop(*trefoil, trefoilcube, q);
+            auto ch = enh_prop
+                ? khover::khChain(*trefoil, trefoilcube, *enh_prop)
+                : std::nullopt;
+
+            if(q%2 == 0) {
+                if (ch) {
+                    ERR_MSG("Non-trivial complex in q=" << q);
+                    return EXIT_FAILURE;
+                }
+                continue;
+            }
+
+            if(!ch) {
+                ERR_MSG("Failed to compute Khovanov homology of the unknot at q=" << q);
+                return EXIT_FAILURE;
+            }
+
+            auto h = ch->compute();
+            for(int i = -ch->maxdeg(); i <= -ch->mindeg(); ++i) {
+                if(auto kh = h[-i-ch->mindeg()].compute();
+                   (std::abs(q)==1 && i == 0
+                    && (kh.freerank != 1 || !kh.torsions.empty()))
+                   || ((std::abs(q)!=1 || i!=0)
+                       && (kh.freerank != 0 || !kh.torsions.empty())))
+                {
+                    ERR_MSG("Wrong homology at (q,i)="
+                            << std::make_pair(q,i) << ":\n"
+                            << kh.pretty());
+                    return EXIT_FAILURE;
+                }
             }
         }
     }
@@ -109,7 +155,10 @@ int main (int argc, char* argv[])
         auto fig8cube = SmoothCube::fromDiagram(*fig8);
 
         for(int q = -5; q <= 5; ++q) {
-            auto ch = khChain(*fig8, fig8cube, q);
+            auto enh_prop = get_enhancement_prop(*fig8, fig8cube, q);
+            auto ch = enh_prop
+                ? khChain(*fig8, fig8cube, *enh_prop)
+                : std::nullopt;
             if((q%2==0 && ch) || (q%2!=0 && !ch)) {
                 ERR_MSG("Illegal cohomology: q=" << q);
                 return EXIT_FAILURE;
@@ -174,7 +223,10 @@ int main (int argc, char* argv[])
         auto fig8Vcube = SmoothCube::fromDiagram(*fig8V);
 
         for(int q = -1; q <= 7; ++q) {
-            auto ch = khChain(*fig8V, fig8Vcube, q);
+            auto enh_prop = get_enhancement_prop(*fig8V, fig8Vcube, q);
+            auto ch = enh_prop
+                ? khChain(*fig8V, fig8Vcube, *enh_prop)
+                : std::nullopt;
             if((q%2==0 && ch) || (q%2!=0 && !ch)) {
                 ERR_MSG("Illegal homology: q=" << q);
                 return EXIT_FAILURE;
@@ -222,7 +274,10 @@ int main (int argc, char* argv[])
         auto fig8Wcube = SmoothCube::fromDiagram(*fig8W);
 
         for(int q = -1; q <= 1; ++q) {
-            auto ch = khChain(*fig8W, fig8Wcube, q);
+            auto enh_prop = get_enhancement_prop(*fig8W, fig8Wcube, q);
+            auto ch = enh_prop
+                ? khChain(*fig8W, fig8Wcube, *enh_prop)
+                : std::nullopt;
             if((q==0 && ch) || (q!=0 && !ch)) {
                 ERR_MSG("Illegal homology: q=" << q);
                 return EXIT_FAILURE;
@@ -260,7 +315,10 @@ int main (int argc, char* argv[])
 
         for(int q = qmin; q <= qmax; q+=2) {
             std::cout << "q-degree: " << q << std::endl;
-            auto ch = khChain(*six_two, sixtwocube, q);
+            auto enh_prop = get_enhancement_prop(*six_two, sixtwocube, q);
+            auto ch = enh_prop
+                ? khChain(*six_two, sixtwocube, *enh_prop)
+                : std::nullopt;
             if(!ch) {
                 ERR_MSG("Cannot compute homology: q=" << q);
                 return EXIT_FAILURE;

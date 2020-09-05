@@ -12,6 +12,7 @@
 
 #include "khovanov.hpp"
 #include "cubes.hpp"
+#include "enhancements.hpp"
 
 /* Debug
 #include "debug/debug.hpp"
@@ -22,143 +23,6 @@ using namespace khover;
 using matrix_t = ChainIntegral::matrix_t;
 
 
-/******************************
- *** Enhancement properties ***
- ******************************/
-template <template <class...> class C>
-static
-std::optional<std::vector<EnhancementProperty>>
-get_enhancement_prop(
-    LinkDiagram const& diagram,
-    //std::vector<T> const& smoothData,
-    Cube<C> const& cube,
-    int qdeg)
-{
-    /*
-    static_assert(std::is_base_of_v<LinkDiagram::smoothdata_t, T>,
-                  "The template parameter T must be derived from LinkDiagram::smoothdata_t.");
-    */
-
-    std::vector<EnhancementProperty> result{};
-    result.reserve(cube.size());
-    for(std::size_t st = 0; st < cube.size(); ++st) {
-        matrix_t::Index headidx = 0;
-
-        if(bitsIndex(state_t{st}) > 0) {
-            auto st_pred = predWithPop(state_t{st}).to_ulong();
-            headidx = result[st_pred].headidx
-                + binom(cube[st_pred].ncomp, result[st_pred].xcnt);
-        }
-
-        // In case where component data is not provided
-        if (cube[st].arccomp.empty()) {
-            result.push_back({headidx, -1});
-            continue;
-        }
-
-        // Compute the degree.
-        int deg = qdeg - diagram.writhe()
-            - diagram.cohDegree(cube[st].state);
-
-        // Parity check
-        if ((cube[st].ncomp - deg)%2 != 0)
-            return std::nullopt;
-
-        // Append the result
-        result.push_back(
-            {headidx, (static_cast<int>(cube[st].ncomp) - deg)/2});
-    }
-
-    return std::make_optional(std::move(result));
-}
-
-
-/*******************************************
- *** Multiplication and comultiplication ***
- *******************************************/
-
-//! Generate matrices for multiplications
-//! By the definition of Khovanov complexes, the resulting matrices consist of 0 and 1.
-//! \param numx The number of 'x's in enhancements on the codomain state. It turns out that the domain has to have the same number of 'x's.
-//! \param ncomps_in_cod The number of connected components in the codomain state. Since this matrix represents the multiplication, the domain has to have exactly (ncomps_in_cod + 1) components.
-//! \param comp_idx1 The common index of the components in the domain and the codomain states which are involved with the multiplication.
-//! \param comp_idx2 The index of the other component in the domain involved with the multiplication.
-//! \remark The function assumes idx1 < idx2.
-//! \return The table of positions in the matrix where coefficients are 1.
-static
-std::vector<std::pair<matrix_t::Index,matrix_t::Index>>
-matrix_mult(
-    int numx, int ncomps_in_cod,
-    std::size_t comp_idx1, std::size_t comp_idx2)
-    noexcept
-{
-    auto enh_bound = binom(ncomps_in_cod, numx);
-    std::vector<std::pair<matrix_t::Index,matrix_t::Index>> result{};
-
-    auto dommask = low_window<max_components>(comp_idx2);
-
-    for(std::size_t k = 0u; k < enh_bound; ++k) {
-        auto enh_cod = bitsWithPop<max_components>(numx, k);
-        auto enh_dom = (enh_cod & dommask) | ((enh_cod & ~dommask) << 1);
-
-        // Codomain has 'x' at idx1.
-        if(enh_cod.test(comp_idx1)) {
-            result.emplace_back(k, bitsIndex(enh_dom));
-            enh_dom.set(comp_idx1, false);
-            enh_dom.set(comp_idx2, true);
-            result.emplace_back(k, bitsIndex(enh_dom));
-        }
-        // Cocomain has '1' at idx1.
-        else {
-            result.emplace_back(k, bitsIndex(enh_dom));
-        }
-    }
-
-    return result;
-}
-
-//! Generate matrices for comultiplications
-//! By the definition of Khovanov complexes, the resulting matrices consist of 0 and 1.
-//! \param numx The number of 'x's in enhancements on the codomain state. It turns out that the domain has to have exactly (numx-1) 'x's.
-//! \param ncomps_in_cod The number of connected components in the codomain state. Since this matrix represents the comultiplication, the domain has to have exactly (ncomps_in_cod - 1) components.
-//! \param comp_idx1 The common index of the components in the domain and the codomain states which are involved with the comultiplication.
-//! \param comp_idx2 The index of the other component in the codomain involved with the multiplication.
-//! \remark The function assumes idx1 < idx2.
-//! \return The table of positions in the matrix where coefficients are 1.
-static
-std::vector<std::pair<int,int>>
-matrix_comult(
-    int numx, int ncomps_in_cod,
-    std::size_t comp_idx1, std::size_t comp_idx2)
-    noexcept
-{
-    auto enh_bound = binom(ncomps_in_cod-1, numx-1);
-    std::vector<std::pair<int,int>> result{};
-
-    auto codmask = low_window<max_components>(comp_idx2);
-
-    for(std::size_t k = 0u; k < enh_bound; ++k) {
-        auto enh_dom = bitsWithPop<max_components>(numx-1, k);
-        auto enh_cod = (enh_dom & codmask) | ((enh_dom & ~codmask) << 1);
-
-        // Domomain has 'x' at idx1.
-        if(enh_dom.test(comp_idx1)) {
-            enh_cod.set(comp_idx2, true);
-            result.emplace_back(bitsIndex(enh_cod), k);
-        }
-        // Domain has '1' at idx1.
-        else {
-            enh_cod.set(comp_idx2, true);
-            result.emplace_back(bitsIndex(enh_cod), k);
-            enh_cod.set(comp_idx1, true);
-            enh_cod.set(comp_idx2, false);
-            result.emplace_back(bitsIndex(enh_cod), k);
-        }
-    }
-
-    return result;
-}
-
 /***********************************
  *** Implementation of functions ***
  ***********************************/
@@ -167,17 +31,10 @@ std::optional<ChainIntegral>
 khover::khChain(
     LinkDiagram const& diagram,
     SmoothCube const& cube,
-    int qdeg)
-    noexcept
+    std::vector<EnhancementProperty> const& enh_prop
+    //int qdeg
+    ) noexcept
 {
-    // Compute the enhancement data
-    std::vector<EnhancementProperty> enh_prop{};
-    // Check if q-degree has compatible parity
-    if(auto aux = get_enhancement_prop(diagram, cube, qdeg); !aux)
-        return std::nullopt;
-    else
-        enh_prop = std::move(*aux);
-
     // Compute the matrices representing matrices.
     ChainIntegral result(
         -diagram.npositive()-1,
@@ -270,22 +127,14 @@ khover::cruxChain(
     LinkDiagram const& diagram,
     std::size_t dblpt,
     CruxCube const& cube,
-    int qdeg)
-    noexcept
+    std::vector<EnhancementProperty> const& enh_prop
+    //int qdeg
+    ) noexcept
 {
     // The double point is out-of-range.
     if(dblpt >= diagram.ncrosses()) {
         return std::nullopt;
     }
-
-    // Compute the enhancement data
-    std::vector<EnhancementProperty> enh_prop{};
-    // Check if q-degree has compatible parity
-    if(auto aux = get_enhancement_prop(
-           diagram, cube, diagram.getSign(dblpt) > 0 ? qdeg : qdeg-2); !aux)
-        return std::nullopt;
-    else
-        enh_prop = std::move(*aux);
 
     // Compute the matrices representing matrices.
     ChainIntegral result(
