@@ -7,7 +7,6 @@
  */
 
 #include <thread>
-#include <utility>
 
 #include "states.hpp"
 #include "khovanov.hpp"

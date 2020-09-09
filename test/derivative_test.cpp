@@ -100,5 +100,81 @@ int main(int, char**)
         }
     }
 
+    // 4-twist knot vs 2-twist knot (aka. figure-eight)
+    {
+        auto twist4 = read_gauss_code(
+            {1, -3, 4, -5, 6, -1, 2, -6, 5, -4, 3, -2}, {std::make_pair(1,true)});
+
+        if(!twist4) {
+            ERR_MSG("Failed to load twist4.");
+            return EXIT_FAILURE;
+        }
+
+        auto twist2 = twist4;
+        twist2->crossingChange(2);
+
+        auto cube4 = SmoothCube::fromDiagram(*twist4);
+        auto cube2 = SmoothCube::fromDiagram(*twist2);
+
+        for(int q=-9; q <= 5; q+=2) {
+            auto enhprop4 = get_enhancement_prop(*twist4, cube4, q);
+            auto enhprop2 = get_enhancement_prop(*twist2, cube2, q);
+
+            if(!enhprop4 || !enhprop2) {
+                ERR_MSG("Failed to compute enhancements in q=" << q);
+                return EXIT_FAILURE;
+            }
+
+            // Compute Khovanov complexes.
+            auto ch4 = khChain(*twist4, cube4, *enhprop4);
+            auto ch2 = khChain(*twist2, cube2, *enhprop2);
+
+            // Compute PhiHat.
+            auto phihat = crossPhiHat(
+                *twist2, 2, cube4, *enhprop4, cube2, *enhprop2);
+            if(!phihat) {
+                ERR_MSG("Failed to compute the map PhiHat for q=" << q);
+                return EXIT_FAILURE;
+            }
+
+            // Compute the derivative
+            auto derch = ChainIntegral::cone(*phihat, *ch4, *ch2);
+            if(!derch) {
+                ERR_MSG("Failed to compute the derivative for q=" << q);
+                return EXIT_FAILURE;
+            }
+
+            auto h = derch->compute();
+            for(auto i = -derch->maxdeg(); i >= -derch->mindeg(); ++i) {
+                if(auto khder = h[-i-derch->mindeg()].compute();
+                   (q==-9 && i==-5 && (khder.freerank != 1 || !khder.isTorFree()))
+                   || (q==-9 && i!=-5 && !khder.isZero())
+                   || (q==-7 && i==-4 && (!khder.isFinite()
+                                          || khder.torsions.size() != 1
+                                          || khder.torsions[0] != 2))
+                   || (q==-7 && i!=-4 && !khder.isZero())
+                   || (q==-5 && i==-4 && (khder.freerank != 1
+                                          || !khder.isTorFree()))
+                   || (q==-5 && i!=-4 && !khder.isZero())
+                   || (q==-3 && i==-2 && (khder.freerank != 1
+                                          || !khder.isTorFree()))
+                   || (q==-3 && i!=-2 && !khder.isZero())
+                   || (q==-1 && i==-1 && (!khder.isFinite()
+                                         || khder.torsions.size() != 1
+                                         || khder.torsions[0] != 2))
+                   || (q==-1 && i!=-1 && !khder.isZero())
+                   || (q==1 && i==-1 && (khder.freerank != 1
+                                         || !khder.isTorFree()))
+                   || (q==1 && i!=-1 && !khder.isZero())
+                   || (q>1 && !khder.isZero())
+                    )
+                {
+                    ERR_MSG("Wrong first derivatives at (i,q)==" << std::make_pair(i,q));
+                    return EXIT_FAILURE;
+                }
+            }
+        }
+    }
+
     return EXIT_SUCCESS;
 }

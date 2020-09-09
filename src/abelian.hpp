@@ -29,6 +29,21 @@ struct AbGroupCyc {
     //! A list of torsions.
     std::vector<int> torsions;
 
+    //! Check if the group is torion-free
+    inline bool isTorFree() const noexcept {
+        return torsions.empty();
+    }
+
+    //! Check if the group is finite (<=> trivial after tensored with Q)
+    inline bool isFinite() const noexcept {
+        return freerank == 0;
+    }
+
+    //! Check if the group is trivial
+    inline bool isZero() const noexcept {
+        return isFinite() && isTorFree();
+    }
+
     //! Pretty printer
     std::string pretty() const noexcept {
         std::string str_free
