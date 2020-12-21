@@ -44,6 +44,7 @@ class ChainIntegral
 {
 public:
     using matrix_t = homology_t::matrix_t;
+    using dummy_t = std::true_type;
 
     //! The class for maps on graded objects.
     //! It is mainly, while not limited to, used to represent chain maps.
@@ -57,6 +58,7 @@ public:
         //! For out-of-range positions, we assume there are the zero-maps.
         std::optional<std::pair<int,std::vector<matrix_t>>> m_morphs;
 
+        //! Only friend class (i.e. ChainIntegral) can construct Hom without data.
         Hom() noexcept = default;
 
     public:
@@ -310,13 +312,48 @@ public:
      *   // -> H_n(C) = result[n+C.mindeg()];
      * \endcode
      */
-    std::vector<homology_t> compute() const noexcept {
+    template <class incoming_t=dummy_t, class outgoing_t=dummy_t>
+    std::vector<homology_t> compute(
+        incoming_t incoming=dummy_t{}, outgoing_t outgoing=dummy_t{}
+        ) const noexcept
+    {
+        // Dimension check for the incoming homomorphism
+        if constexpr (std::is_same<incoming_t,Hom>::value) {
+            if (!incoming.m_morphs
+                || incoming.mindeg() > mindeg() || incoming.maxdeg() < maxdeg() ) {
+                ERR_MSG("Incompatible codomains of the in-coming homomorphism");
+                return {};
+            }
+            for(int i=mindeg(); i <= maxdeg(); ++i) {
+                if (incoming.morphism(i).rows() != rank(i)) {
+                    ERR_MSG("Incompatible codomains of the in-coming homomorphism");
+                    return {};
+                }
+            }
+        }
+
+        // Dimension check for the outgoing homomorphism
+        if constexpr (std::is_same<outgoing_t,Hom>::value) {
+            if (!outgoing.m_morphs
+                || outgoing.mindeg() > mindeg() || outgoing.maxdeg() < maxdeg() ) {
+                ERR_MSG("Incompatible codomains of the out-going homomorphism");
+                return {};
+            }
+            for(int i=mindeg(); i <= maxdeg(); ++i) {
+                if (outgoing.morphism(i).cols() != rank(i)) {
+                    ERR_MSG("Incompatible codomains of the out-going homomorphism");
+                    return {};
+                }
+            }
+        }
+
         std::vector<matrix_t> diff_mutable(m_diffs.begin(), m_diffs.end());
         std::vector<homology_t> result{};
 
         for(std::size_t i = 0; i < m_diffs.size()-1; ++i) {
             auto rk = hnf_LLL<khover::colops>(
                 diff_mutable[i], std::tie(diff_mutable[i+1]), {});
+
             if (!rk) {
                 ERR_MSG("Failed to decompose the chain complex.");
                 return {};
