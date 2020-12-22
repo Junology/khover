@@ -256,8 +256,12 @@ public:
             >
     {
         // If the number of rows doesn't agree, return immediately.
-        if(morph.rows() != static_cast<int>(m_freerk) + m_repMat.rows())
+        if(morph.rows() != static_cast<int>(m_freerk) + m_repMat.rows()) {
+            ERR_MSG("Incompatible rows:"
+                    << morph.rows() << " != "
+                    << static_cast<int>(m_freerk) + m_repMat.rows());
             return std::nullopt;
+        }
 
         // Sum of the images of the homomorphism and the representation matrix.
         matrix_t sumspace(morph.rows(), morph.cols() + m_repMat.cols());
@@ -268,8 +272,10 @@ public:
         auto rk = hnf_LLL<khover::colops>(sumspace, std::tie(u), {});
 
         // Error occured.
-        if(!rk)
+        if(!rk) {
+            ERR_MSG("Failed to compute HNF.");
             return std::nullopt;
+        }
 
         // Return the resulting abelian group together with the homomorphism from it.
         if constexpr (DoesReturnMorphism::value) {

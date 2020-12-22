@@ -21,7 +21,7 @@ namespace khover{
 //! A set of static const variables.
 template <class T>
 struct constants {
-static inline auto const empty_matrix
+static inline auto empty_matrix
   = Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic>(0,0);
 };
 
@@ -109,6 +109,12 @@ public:
             return m_morphs && i >= mindeg() && i <= maxdeg()
                 ? m_morphs->second[i-mindeg()]
                 : constants<coeff_t>::empty_matrix;
+        }
+
+        inline matrix_t& at(int i) noexcept {
+            if (!m_morphs || i < mindeg() || i > maxdeg())
+                return constants<coeff_t>::empty_matrix;
+            return m_morphs->second[i-mindeg()];
         }
 
         inline std::pair<std::size_t,std::size_t> ranks(int i) const noexcept {
@@ -313,19 +319,25 @@ public:
      * \endcode
      */
     template <class incoming_t=dummy_t, class outgoing_t=dummy_t>
-    std::vector<homology_t> compute(
-        incoming_t incoming=dummy_t{}, outgoing_t outgoing=dummy_t{}
+    auto compute(
+        incoming_t&& incoming=dummy_t{}, outgoing_t&& outgoing=dummy_t{}
         ) const noexcept
+        -> std::vector<homology_t>
     {
+        constexpr bool is_incoming_given
+            = std::is_same_v<std::decay_t<incoming_t>,Hom>;
+        constexpr bool is_outgoing_given
+            = std::is_same_v<std::decay_t<outgoing_t>,Hom>;
+
         // Dimension check for the incoming homomorphism
-        if constexpr (std::is_same<incoming_t,Hom>::value) {
+        if constexpr (is_incoming_given) {
             if (!incoming.m_morphs
                 || incoming.mindeg() > mindeg() || incoming.maxdeg() < maxdeg() ) {
                 ERR_MSG("Incompatible codomains of the in-coming homomorphism");
                 return {};
             }
             for(int i=mindeg(); i <= maxdeg(); ++i) {
-                if (incoming.morphism(i).rows() != rank(i)) {
+                if (incoming.morphism(i).rows() != static_cast<int>(rank(i))) {
                     ERR_MSG("Incompatible codomains of the in-coming homomorphism");
                     return {};
                 }
@@ -333,14 +345,14 @@ public:
         }
 
         // Dimension check for the outgoing homomorphism
-        if constexpr (std::is_same<outgoing_t,Hom>::value) {
+        if constexpr (is_outgoing_given) {
             if (!outgoing.m_morphs
                 || outgoing.mindeg() > mindeg() || outgoing.maxdeg() < maxdeg() ) {
                 ERR_MSG("Incompatible codomains of the out-going homomorphism");
                 return {};
             }
             for(int i=mindeg(); i <= maxdeg(); ++i) {
-                if (outgoing.morphism(i).cols() != rank(i)) {
+                if (outgoing.morphism(i).cols() != static_cast<int>(rank(i))) {
                     ERR_MSG("Incompatible codomains of the out-going homomorphism");
                     return {};
                 }
@@ -350,26 +362,81 @@ public:
         std::vector<matrix_t> diff_mutable(m_diffs.begin(), m_diffs.end());
         std::vector<homology_t> result{};
 
+        std::optional<std::size_t> rk = std::nullopt;
+
         for(std::size_t i = 0; i < m_diffs.size()-1; ++i) {
-            auto rk = hnf_LLL<khover::colops>(
-                diff_mutable[i], std::tie(diff_mutable[i+1]), {});
+            if constexpr (is_incoming_given && is_outgoing_given)
+                rk = hnf_LLL<khover::colops>(
+                    diff_mutable[i],
+                    std::tie(diff_mutable[i+1], incoming.at(i+1+mindeg())),
+                    std::tie(outgoing.at(i+1+mindeg())));
+            else if constexpr (is_incoming_given)
+                rk = hnf_LLL<khover::colops>(
+                    diff_mutable[i],
+                    std::tie(diff_mutable[i+1], incoming.at(i+1+mindeg())),
+                    {});
+            else if constexpr (is_outgoing_given)
+                rk = hnf_LLL<khover::colops>(
+                    diff_mutable[i],
+                    std::tie(diff_mutable[i+1]),
+                    std::tie(outgoing.at(i+1+mindeg())));
+            else
+                rk = hnf_LLL<khover::colops>(
+                    diff_mutable[i], std::tie(diff_mutable[i+1]), {});
 
             if (!rk) {
                 ERR_MSG("Failed to decompose the chain complex.");
                 return {};
             }
 
-            diff_mutable[i] = diff_mutable[i].leftCols(*rk).eval();
+            // Reduce differentials
+            result.emplace_back(diff_mutable[i].leftCols(*rk),
+                                std::true_type{});
             diff_mutable[i+1] = diff_mutable[i+1].bottomRows(
                 diff_mutable[i+1].rows() - *rk).eval();
-            result.emplace_back(diff_mutable[i], std::true_type{});
+
+            // Reduce in-coming homomorphisms; project onto kernels
+            if constexpr(is_incoming_given) {
+                incoming.at(i+1+mindeg()) = incoming.at(i+1+mindeg()).bottomRows(
+                    incoming.at(i+1+mindeg()).rows() - *rk).eval();
+            }
+            // Reduce out-going homomorphisms; restrict to kernels
+            if constexpr(is_outgoing_given) {
+                outgoing.at(i+1+mindeg()) = outgoing.at(i+1+mindeg()).rightCols(
+                    outgoing.at(i+1+mindeg()).cols() - *rk).eval();
+            }
         }
 
         //! Compute the highest homology group.
-        auto rk = hnf_LLL<khover::colops>(diff_mutable.back(), {}, {});
+        if constexpr(is_incoming_given && is_outgoing_given)
+            rk = hnf_LLL<khover::colops>(
+                diff_mutable.back(),
+                std::tie(incoming.at(maxdeg())),
+                std::tie(outgoing.at(maxdeg())));
+        else if constexpr (is_incoming_given)
+            rk = hnf_LLL<khover::colops>(
+                diff_mutable.back(),
+                std::tie(incoming.at(maxdeg())), {});
+        else if constexpr (is_outgoing_given)
+            rk = hnf_LLL<khover::colops>(
+                diff_mutable.back(), {}, std::tie(outgoing.at(maxdeg())));
+        else
+            rk = hnf_LLL<khover::colops>(diff_mutable.back(), {}, {});
+
         if (!rk) {
             ERR_MSG("Failed to decompose the chain complex.");
             return {};
+        }
+
+        // Reduce in-coming homomorphisms; project onto kernels
+        if constexpr(is_incoming_given) {
+            incoming.at(maxdeg()) = incoming.at(maxdeg()).bottomRows(
+                incoming.at(maxdeg()).rows() - *rk).eval();
+        }
+        // Reduce out-going homomorphisms; restrict to kernels
+        if constexpr(is_outgoing_given) {
+            outgoing.at(maxdeg()) = outgoing.at(maxdeg()).rightCols(
+                outgoing.at(maxdeg()).cols() - *rk).eval();
         }
 
         result.emplace_back(diff_mutable.back(), std::true_type{});

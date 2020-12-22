@@ -53,6 +53,12 @@ khover_test(
   )
 
 khover_test(
+  himage_test
+  ""
+  Eigen3::Eigen
+  )
+
+khover_test(
   states_test
   ""
   Eigen3::Eigen
