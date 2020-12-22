@@ -179,33 +179,44 @@ khover::crossPhiHat(
                     homs[cube_pos.dim()-stbit_pos.count()].coeffRef(
                         enhprop_pos[st_pos].headidx + bitsIndex(enh),
                         enhprop_neg[st_neg].headidx + e
-                        ) = sign * 2;
+                        ) = 0; // sign * 2;
                 }
             }
             // Two components
             else {
                 // Both '1'
                 if(!enh.test(urcomp_neg) && !enh.test(dlcomp_neg)) {
+                    // -1*x
                     enh.set(urcomp_neg);
                     homs[cube_pos.dim()-stbit_pos.count()].coeffRef(
                         enhprop_pos[st_pos].headidx + bitsIndex(enh),
                         enhprop_neg[st_neg].headidx + e
-                        ) = sign;
+                        ) = -sign;
                     enh.set(urcomp_neg, false);
+                    // x*1
                     enh.set(dlcomp_neg);
                     homs[cube_pos.dim()-stbit_pos.count()].coeffRef(
                         enhprop_pos[st_pos].headidx + bitsIndex(enh),
                         enhprop_neg[st_neg].headidx + e
                         ) = sign;
                 }
-                // '1' and 'x'
-                else if(!enh.test(urcomp_neg) || !enh.test(dlcomp_neg)) {
+                // '1' on left, 'x' on right
+                else if(!enh.test(urcomp_neg)) {
                     enh.set(urcomp_neg);
                     enh.set(dlcomp_neg);
                     homs[cube_pos.dim()-stbit_pos.count()].coeffRef(
                         enhprop_pos[st_pos].headidx + bitsIndex(enh),
                         enhprop_neg[st_neg].headidx + e
                         ) = sign;
+                }
+                // 'x' on left, '1' on right
+                else if(!enh.test(dlcomp_neg)) {
+                    enh.set(urcomp_neg);
+                    enh.set(dlcomp_neg);
+                    homs[cube_pos.dim()-stbit_pos.count()].coeffRef(
+                        enhprop_pos[st_pos].headidx + bitsIndex(enh),
+                        enhprop_neg[st_neg].headidx + e
+                        ) = -sign;
                 }
             }
         }

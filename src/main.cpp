@@ -7,6 +7,7 @@
 #include <cctype>
 #include <string>
 #include <string_view>
+#include <thread>
 
 #include "config.hpp"
 #include "linkdiagram.hpp"
@@ -403,9 +404,121 @@ int main(int argc, char* argv[])
     }
         break;
 
-    case AppMode::Derivative:
-        std::cout << "Computation of the first Vassiliev derivative is WIP." << std::endl;
+    case AppMode::Derivative: {
+        if (target_crossing <= 0 || target_crossing > static_cast<int>(diagram->ncrosses())) {
+            std::cerr << "Invalid double point index." << std::endl;
+            return EXIT_FAILURE;
+        }
+        std::cout << "Computing the first derivative" << std::endl;
         std::cout << "Target crossing: " << target_crossing << std::endl;
+        // To simplify the situation,
+        // we may assume the target crossing is negative
+        diagram->makeNegative(target_crossing-1);
+
+        // Take a copy that resolves the double point into positive.
+        auto diagram_pos = diagram;
+        diagram_pos->makePositive(target_crossing-1);
+
+        // Compute the bounds of q-gradings
+        int qmin =
+            std::min(
+                - static_cast<int>(diagram->smoothing(0u).first)
+                - static_cast<int>(diagram->nnegative())
+                + diagram->writhe(),
+                - static_cast<int>(diagram_pos->smoothing(0u).first)
+                - static_cast<int>(diagram_pos->nnegative())
+                + diagram_pos->writhe()
+                );
+        int qmax =
+            std::max(
+                static_cast<int>(diagram->smoothing(~state_t(0u)).first)
+                + static_cast<int>(diagram->npositive())
+                + diagram->writhe(),
+                static_cast<int>(diagram_pos->smoothing(~state_t(0u)).first)
+                + static_cast<int>(diagram_pos->npositive())
+                + diagram_pos->writhe()
+                );
+
+        // Make cubes
+        std::optional<SmoothCube> cube_neg, cube_pos;
+        std::thread mk_cubeneg(
+            [&cube_neg, &diagram]() {
+                cube_neg = SmoothCube::fromDiagram(*diagram);
+            });
+        cube_pos = SmoothCube::fromDiagram(*diagram_pos);
+        mk_cubeneg.join();
+
+        // Compute homology groups
+        for(int q = qmin; q <= qmax; q+=2) {
+            // Compute enhancement properties
+            std::optional<std::vector<khover::EnhancementProperty>> enhprop_neg, enhprop_pos;
+            std::thread mk_enh_neg(
+                [&enhprop_neg, &diagram, &cube_neg, &q] () {
+                    enhprop_neg = get_enhancement_prop(*diagram, *cube_neg, q);
+                });
+            enhprop_pos = get_enhancement_prop(*diagram_pos, *cube_pos, q);
+            mk_enh_neg.join();
+
+            if (!enhprop_neg || !enhprop_pos) {
+                ERR_MSG("Failed to compute enhancement properties.");
+                return EXIT_FAILURE;
+            }
+
+            // Compute chain complexes and PhiHat
+            std::optional<ChainIntegral> ch_neg, ch_pos;
+            std::optional<ChainIntegral::Hom> phihat;
+            std::thread mk_ch_neg(
+                [&]() {
+                    ch_neg = khChain(*diagram, *cube_neg, *enhprop_neg);
+                });
+            std::thread mk_ch_pos(
+                [&]() {
+                    ch_pos = khChain(*diagram_pos, *cube_pos, *enhprop_pos);
+                });
+            phihat = khover::crossPhiHat(
+                *diagram, target_crossing-1,
+                *cube_neg, *enhprop_neg,
+                *cube_pos, *enhprop_pos);
+            mk_ch_neg.join();
+            mk_ch_pos.join();
+
+            if (!ch_neg || !ch_pos)
+                continue;
+
+            if (!phihat) {
+                ERR_MSG("Failed to compute PhiHat.");
+                return EXIT_FAILURE;
+            }
+
+            // Compute the derivative as the mapping cone of PhiHat.
+            auto derch = ChainIntegral::cone(*phihat, *ch_neg, *ch_pos);
+            if(!derch) {
+                ERR_MSG("Failed to compute mapping cone at q=" << q);
+                return EXIT_FAILURE;
+            }
+
+            // Show the result
+            std::cout << "q-degree: " << q << std::endl;
+            auto h = derch->compute();
+
+            for (auto i=derch->mindeg(); i <= derch->maxdeg(); ++i) {
+                std::cout << std::setw(4) << std::right << (-i) << ": "
+                          << std::resetiosflags(std::ios_base::adjustfield | std::ios_base::basefield)
+                          << h[i-derch->mindeg()].compute().pretty()
+                          << std::endl;
+            }
+            /*
+            int i = derch->mindeg();
+            for(auto h : derch->compute()) {
+                std::cout << std::setw(4) << std::right << (-i) << ": "
+                          << std::resetiosflags(std::ios_base::adjustfield | std::ios_base::basefield)
+                          << h.compute().pretty()
+                          << std::endl;
+                ++i;
+            }
+            */
+        }
+    }
         break;
 
     case AppMode::CruxImage:

@@ -8,6 +8,7 @@ add_executable(
   cubes.cpp
   enhancements.cpp
   khovanov.cpp
+  cruxhom.cpp
 )
 
 target_link_libraries(
