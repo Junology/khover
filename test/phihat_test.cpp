@@ -91,6 +91,8 @@ int test_phihat(LinkDiagram const& diagram, LinkDiagram::crossing_t c)
 int main (int argc, char* argv[])
 {
     std::vector<std::pair<std::size_t,bool>> sgn = {std::make_pair(0,false)};
+    // Diagrams of prime knots with <= 7 crossings
+    // (from https://knotinfo.math.indiana.edu/)
     std::optional<LinkDiagram> diagrams[] = {
         read_gauss_code({1, -2, 3, -1, 2, -3}, sgn),
         read_gauss_code({-1, 2, -3, 1, -4, 3, -2, 4}, sgn),
