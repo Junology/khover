@@ -313,5 +313,22 @@ int main(int argc, char* argv[])
         }
     }
 
+    // Sum of two copies of trefoild
+    {
+        auto trefoil_sum = read_gauss_code(
+            {1,-4,5,-6,4,-5,6,-3,2,-1,3,-2},
+            {std::make_pair(1,false)});
+        if (!trefoil_sum) {
+            ERR_MSG("Failed to load trefoil#trefoil");
+            return EXIT_FAILURE;
+        }
+
+        for(std::size_t i=0; i < 6; ++i) {
+            if (trefoil_sum->getSign(i) < 0) {
+                ERR_MSG("Wrong sign at " << i);
+                return EXIT_FAILURE;
+            }
+        }
+    }
     return 0;
 }
