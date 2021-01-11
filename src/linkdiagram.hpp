@@ -211,6 +211,14 @@ public:
         }
     }
 
+    //! Take the mirror image
+    inline
+    void
+    mirroring() noexcept {
+        for(auto& c : m_cross)
+            c.is_positive = !c.is_positive;
+    }
+
     //! Make a crossing positive.
     inline
     void
