@@ -68,16 +68,22 @@ int LinkDiagram::stateCoeff(state_t st_before, state_t st_after)
     // Find different bits.
     auto st_diff = st_after ^ st_before;
 
-    // If there are more than one differences, two states are not adjacent.
+    // If there are zero or more than one differences, two states are not adjacent.
     if (st_diff.count() != 1)
         return 0;
 
     // The parity of the number of smoothings that "break the orientaion."
+    // Note that the smoothing breaks the orientation precisely if
+    //   (sign,state) = (-,0) or (+,1).
+    // Thus, the number of such crossings are counted as
+    //   > (state ^ (~signs)).count();
+    // Also, we need to concentrate on the bits with index < i with
+    //   > st_diff.test(i)==true;
     bool sign = false;
     for(std::size_t i = 0; i < m_cross.size() && !st_diff.test(i); ++i) {
         sign ^=
-            (m_cross[i].is_positive && st_before.test(i))
-            || (!m_cross[i].is_positive && !st_before.test(i));
+            (m_signs.test(i) && st_before.test(i))
+            || (!m_signs.test(i) && !st_before.test(i));
     }
 
     return sign ? -1 : 1;
@@ -95,12 +101,10 @@ khover::LinkDiagram::makeSmoothV(crossing_t c) noexcept
     mergeArcs(m_cross[c].adj_arc[0], m_cross[c].adj_arc[3]);
     mergeArcs(m_cross[c].adj_arc[1], m_cross[c].adj_arc[2]);
 
-    // Remove the crossing
-    if(m_cross[c].is_positive)
-        --m_numpositive;
-    else
-        --m_numnegative;
+    // Remove the sign bit associated with the crossing.
+    omit_bit(m_signs, c);
 
+    // Remove the crossing.
     m_cross.erase(std::next(std::begin(m_cross),c));
 }
 
@@ -129,7 +133,7 @@ khover::LinkDiagram::smoothing(state_t st)
     // Smoothing of crossings.
     for(std::size_t i = 0; i < m_cross.size(); ++i) {
         // state=1 on positive or state=0 on negative
-        if(m_cross[i].is_positive == st.test(i)) {
+        if(m_signs.test(i) == st.test(i)) {
             if (auto rmc = merge_components(
                     result, m_cross[i].adj_arc[0], m_cross[i].adj_arc[2]);
                 rmc)
@@ -181,7 +185,7 @@ LinkDiagram::cruxTwists(state_t st, std::size_t dblpt)
         return std::nullopt;
 
     // Extend the state on crossings to double point so that the double point is smoothed along the orientation.
-    st = insertBit(st, dblpt, !m_cross[dblpt].is_positive);
+    st = insertBit(st, dblpt, !m_signs[dblpt]);
 
     std::bitset<max_arcs> is_twisted{0u};
     std::size_t icur = dblpt;
@@ -213,19 +217,19 @@ LinkDiagram::cruxTwists(state_t st, std::size_t dblpt)
         icur = i;
         switch(d) {
         case 0:
-            dir = m_cross[i].is_positive == st.test(i) ? 2 : 3;
+            dir = m_signs.test(i) == st.test(i) ? 2 : 3;
             break;
 
         case 1:
-            dir = m_cross[i].is_positive == st.test(i) ? 3 : 2;
+            dir = m_signs.test(i) == st.test(i) ? 3 : 2;
             break;
 
         case 2:
-            dir = m_cross[i].is_positive == st.test(i) ? 0 : 1;
+            dir = m_signs.test(i) == st.test(i) ? 0 : 1;
             break;
 
         case 3:
-            dir = m_cross[i].is_positive == st.test(i) ? 1 : 0;
+            dir = m_signs.test(i) == st.test(i) ? 1 : 0;
             break;
 
         default:

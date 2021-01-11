@@ -367,7 +367,8 @@ khover::read_gauss_code(
     // Create the list of crossings
     std::vector<LinkDiagram::Crossing> crosses(
         numcrs,
-        LinkDiagram::Crossing{false, {0, 0, 0, 0}});
+        LinkDiagram::Crossing{0, 0, 0, 0});
+
     std::size_t ixbase = 0;
     // The table remembering the source and the target of each edge.
     std::map<std::size_t,std::pair<int,int>> edge_map{};
@@ -388,6 +389,9 @@ khover::read_gauss_code(
         }
         ixbase += comp.size();
     }
+
+    // The table of signs.
+    LinkDiagram::signs_t crs_signs{};
 
     // Choose a sign on each crossing
     for(int v = 0; static_cast<std::size_t>(v) < numcrs; ++v) {
@@ -411,8 +415,10 @@ khover::read_gauss_code(
             return std::nullopt;
         }
 
-        crosses[v].is_positive
-            = (std::distance(orditr_o, orditr_u) + 4)%4 == 1;
+        crs_signs.set(
+            v,
+            (std::distance(orditr_o, orditr_u) + 4)%4 == 1
+            );
     }
 
     // Take mirrors so that required signs are satisfied.
@@ -431,7 +437,7 @@ khover::read_gauss_code(
 
         // Component not found, or the current diagram already has the sign, skip that request.
         if (compitr == std::end(disjcomps)
-            || crosses[sign.first-1].is_positive == sign.second)
+            || crs_signs.test(sign.first-1) == sign.second)
             continue;
 
         // Remove duplicates in the disjoint component.
@@ -440,10 +446,10 @@ khover::read_gauss_code(
             std::begin(*compitr), std::end(*compitr));
         // Take the mirror image of the component.
         for(auto itr = std::begin(*compitr); itr != lastitr; ++itr) {
-            crosses[std::abs(*itr)-1].is_positive ^= true;
+            crs_signs.flip(std::abs(*itr)-1);
         }
     }
 
-    return LinkDiagram(2*numcrs, std::move(crosses));
+    return LinkDiagram(2*numcrs, std::move(crosses), crs_signs);
 }
 

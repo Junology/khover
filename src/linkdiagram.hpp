@@ -26,13 +26,16 @@ namespace khover {
 //! It only contains minimum information for "state-sum" methods.
 class LinkDiagram {
 public:
+    //! The type of indices of crossings;
     using crossing_t = std::size_t;
+
+    //! The type of tables of signs.
+    //! It is supposed to be convertible to the type of states.
+    using signs_t = state_t;
     using arc_t = unsigned int;
 
     //! The type representing each crossings.
     struct Crossing {
-        //! A flag if the crossing is positive or not.
-        bool is_positive;
         //! Indicating how the crossing is adjacent to arcs so that
         //!   - *adj_arc[0]* is the in-coming over-arc;
         //!   - *adj_arc[1]* is the out-going over-arc;
@@ -47,14 +50,16 @@ private:
     std::size_t m_numarcs;
 
     //! The list of crossings.
+    //! The length must be < khover::Limits::max_crosses.
     std::vector<Crossing> m_cross;
 
-    //! The list of wide edges; i.e. crossings that are always smoothed horizontally (see Khovanov and Rozansky, "Matrix factorizations and link homology II").
-    std::vector<Crossing> m_wides{};
+    //! The table of signs of crossings.
+    //! 0: negative, 1: positive.
+    signs_t m_signs;
 
-    // Be careful on the order of declarations.
-    std::size_t m_numpositive;
-    std::size_t m_numnegative;
+    //! The list of wide edges; i.e. infinity-smoothed crossings.
+    //! (see Khovanov and Rozansky, "Matrix factorizations and link homology I")
+    std::vector<Crossing> m_wides{};
 
 public:
     /*!
@@ -62,22 +67,13 @@ public:
      */
     //\{
     //! This is the only chance to set the number of arcs (except copies).
-    LinkDiagram(std::size_t numarcs, std::vector<Crossing> const& cross) noexcept
-        : m_numarcs(numarcs), m_cross(cross),
-          m_numpositive(
-              std::count_if(
-                  std::begin(cross), std::end(cross),
-                  [](auto const& crs) { return crs.is_positive; } )),
-          m_numnegative(cross.size() - m_numpositive)
+    template <template <class...> class Container>
+    LinkDiagram(std::size_t numarcs, Container<Crossing> const& cross, signs_t const& signs) noexcept
+        : m_numarcs(numarcs), m_cross(cross), m_signs(signs)
     {}
 
-    LinkDiagram(std::size_t numarcs, std::vector<Crossing>&& cross) noexcept
-        : m_numarcs(numarcs), m_cross(std::move(cross)),
-          m_numpositive(
-              std::count_if(
-                  std::begin(m_cross), std::end(m_cross),
-                  [](auto const& crs) { return crs.is_positive; } )),
-          m_numnegative(m_cross.size() - m_numpositive)
+    LinkDiagram(std::size_t numarcs, std::vector<Crossing>&& cross, signs_t const& signs) noexcept
+        : m_numarcs(numarcs), m_cross(std::move(cross)), m_signs(signs)
     {}
 
     ~LinkDiagram() = default;
@@ -109,20 +105,20 @@ public:
     std::size_t
     ncrosses() const noexcept { return m_cross.size(); }
 
-    //! Get the number of negative crossings.
-    inline
-    std::size_t
-    nnegative() const noexcept { return m_numnegative; }
-
     //! Get the number of positive crossings.
     inline
     std::size_t
-    npositive() const noexcept { return m_numpositive; }
+    npositive() const noexcept { return m_signs.count(); }
+
+    //! Get the number of negative crossings.
+    inline
+    std::size_t
+    nnegative() const noexcept { return m_cross.size() - npositive(); }
 
     //! Compute the writhe number
     inline
     int
-    writhe() const noexcept { return m_numpositive - m_numnegative; }
+    writhe() const noexcept { return npositive() - nnegative(); }
 
     //! Get the list of crossings.
     inline
@@ -137,14 +133,14 @@ public:
     int
     getSign(crossing_t c) const noexcept {
         return c < m_cross.size()
-                   ? (m_cross[c].is_positive ? 1 : -1) : 0;
+                   ? (m_signs[c] ? 1 : -1) : 0;
     }
 
     //! Get the index of the upper-right arc.
     inline
     arc_t getURArc(crossing_t c) const noexcept {
         return c < m_cross.size()
-                   ? (m_cross[c].is_positive
+                   ? (m_signs[c]
                       ? m_cross[c].adj_arc[1]
                       : m_cross[c].adj_arc[3])
                    : std::numeric_limits<arc_t>::max();
@@ -154,7 +150,7 @@ public:
     inline
     arc_t getULArc(crossing_t c) const noexcept {
         return c < m_cross.size()
-                   ? (m_cross[c].is_positive
+                   ? (m_signs[c]
                       ? m_cross[c].adj_arc[3]
                       : m_cross[c].adj_arc[1])
                    : std::numeric_limits<arc_t>::max();
@@ -164,7 +160,7 @@ public:
     inline
     arc_t getDRArc(crossing_t c) const noexcept {
         return c < m_cross.size()
-                   ? (m_cross[c].is_positive
+                   ? (m_signs[c]
                       ? m_cross[c].adj_arc[2]
                       : m_cross[c].adj_arc[0])
                    : std::numeric_limits<arc_t>::max();
@@ -174,7 +170,7 @@ public:
     inline
     arc_t getDLArc(crossing_t c) const noexcept {
         return c < m_cross.size()
-                   ? (m_cross[c].is_positive
+                   ? (m_signs[c]
                       ? m_cross[c].adj_arc[0]
                       : m_cross[c].adj_arc[2])
                    : std::numeric_limits<arc_t>::max();
@@ -199,46 +195,32 @@ public:
     inline
     void
     crossingChange(crossing_t c) noexcept {
-        if (c < m_cross.size()) {
-            if(m_cross[c].is_positive ^= true) {
-                --m_numnegative;
-                ++m_numpositive;
-            }
-            else {
-                ++m_numnegative;
-                --m_numpositive;
-            }
-        }
+        if (c < m_cross.size())
+            m_signs.flip(c);
     }
 
-    //! Take the mirror image
+    //! Take the mirror image.
+    //! i.e. Flipping the signs of all crossings.
     inline
     void
     mirroring() noexcept {
-        for(auto& c : m_cross)
-            c.is_positive = !c.is_positive;
+        m_signs.flip();
     }
 
     //! Make a crossing positive.
     inline
     void
     makePositive(crossing_t c) noexcept {
-        if (c < m_cross.size() && !m_cross[c].is_positive) {
-            m_cross[c].is_positive = true;
-            --m_numnegative;
-            ++m_numpositive;
-        }
+        if (c < m_cross.size())
+            m_signs.set(c);
     }
 
     //! Make a crossing negative.
     inline
     void
     makeNegative(crossing_t c) noexcept {
-        if (c < m_cross.size() && m_cross[c].is_positive) {
-            m_cross[c].is_positive = false;
-            ++m_numnegative;
-            --m_numpositive;
-        }
+        if (c < m_cross.size())
+            m_signs.reset(c);
     }
 
     //! Vertical smoothing; i.e. the smoothing along the orientation.
@@ -253,11 +235,8 @@ public:
     {
         if (c < m_cross.size()) {
             m_wides.push_back(m_cross[c]);
-            if(m_cross[c].is_positive)
-                --m_numpositive;
-            else
-                --m_numnegative;
             m_cross.erase(std::next(std::begin(m_cross), c));
+            omit_bit(m_signs, c);
         }
     }
     //\}
@@ -272,7 +251,7 @@ public:
     inline
     int
     cohDegree(state_t st) const noexcept {
-        return static_cast<int>(st.count()) - static_cast<int>(m_numnegative);
+        return static_cast<int>(st.count()) - static_cast<int>(nnegative());
     }
 
     //! Check if a state is adjacent to the other in Khovanov's smoothing cube.

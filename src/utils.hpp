@@ -12,6 +12,7 @@
 #include <utility>
 #include <tuple>
 #include <numeric>
+#include <bitset>
 #include <cstdlib>
 
 namespace khover{
@@ -101,6 +102,17 @@ constexpr auto map_to_tuple(T const (&arr)[n], F&& f) noexcept
 {
     return _impl::map_to_tuple_impl(arr, std::forward<F>(f),
                                     std::make_index_sequence<n>());
+}
+
+//! Omit a bit at index i from std::bitset and shift the higher bits to fill the resulting blank.
+//! \param bits The variable of type std::bitset from which a bit is omitted.
+//! \param i The index of the bit to be omitted.
+//! \pre i < n; no range check will be performed in this function.
+template <std::size_t n>
+void omit_bit(std::bitset<n> &bits, std::size_t i) noexcept
+{
+    auto mask = std::bitset<n>(0).flip() >> (n-i);
+    bits = (bits & mask) | ((bits >> 1) & (~mask));
 }
 
 
