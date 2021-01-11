@@ -89,6 +89,12 @@ khover_test(
   )
 
 khover_test(
+  phihat_test
+  "${CMAKE_SOURCE_DIR}/src/cruxhom.cpp;${CMAKE_SOURCE_DIR}/src/gausscode.cpp;${CMAKE_SOURCE_DIR}/src/linkdiagram.cpp;${CMAKE_SOURCE_DIR}/src/khovanov.cpp;${CMAKE_SOURCE_DIR}/src/cubes.cpp;${CMAKE_SOURCE_DIR}/src/enhancements.cpp"
+  Eigen3::Eigen
+  )
+
+khover_test(
   derivative_test
   "${CMAKE_SOURCE_DIR}/src/cruxhom.cpp;${CMAKE_SOURCE_DIR}/src/gausscode.cpp;${CMAKE_SOURCE_DIR}/src/linkdiagram.cpp;${CMAKE_SOURCE_DIR}/src/khovanov.cpp;${CMAKE_SOURCE_DIR}/src/cubes.cpp;${CMAKE_SOURCE_DIR}/src/enhancements.cpp"
   Eigen3::Eigen

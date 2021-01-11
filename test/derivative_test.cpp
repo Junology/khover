@@ -5,6 +5,20 @@
 
 using namespace khover;
 
+std::optional<int> checkChainmap(ChainIntegral::Hom const &f, ChainIntegral const& dom, ChainIntegral const& cod)
+{
+    auto maxdeg = std::max(dom.maxdeg(), cod.maxdeg());
+    auto mindeg = std::min(dom.mindeg(), cod.mindeg());
+
+    for(auto i = mindeg; i <= maxdeg; ++i) {
+        auto comm = cod.getDiff(i)*f.morphism(i+1) - f.morphism(i)*dom.getDiff(i);
+        if(!comm.isZero())
+            return std::make_optional(i);
+    }
+
+    return std::nullopt;
+}
+
 int main(int, char**)
 {
     // trefoil with double point at 1.
@@ -52,6 +66,12 @@ int main(int, char**)
                 *trefoil, 0, cube_neg, *enhprop_neg, cube_pos, *enhprop_pos);
             if(!phihat) {
                 ERR_MSG("Failed to compute the map PhiHat for q=" << q);
+                return EXIT_FAILURE;
+            }
+
+            // Check if PhiHat is a chain map;
+            if(auto iscm = checkChainmap(*phihat, *ch_neg, *ch_pos); iscm) {
+                ERR_MSG("Phihat is not a chain map: df != fd at i=" << *iscm);
                 return EXIT_FAILURE;
             }
 
@@ -150,6 +170,12 @@ int main(int, char**)
                 return EXIT_FAILURE;
             }
 
+            // Check if PhiHat is a chain map;
+            if(auto iscm = checkChainmap(*phihat, *ch_neg, *ch_pos); iscm) {
+                ERR_MSG("Phihat is not a chain map: df != fd at i=" << *iscm);
+                return EXIT_FAILURE;
+            }
+
             // Compute the derivative
             auto derch = ChainIntegral::cone(*phihat, *ch_neg, *ch_pos);
             if(!derch) {
@@ -232,6 +258,12 @@ int main(int, char**)
                 *twist2, 2, cube4, *enhprop4, cube2, *enhprop2);
             if(!phihat) {
                 ERR_MSG("Failed to compute the map PhiHat for q=" << q);
+                return EXIT_FAILURE;
+            }
+
+            // Check if PhiHat is a chain map;
+            if(auto iscm = checkChainmap(*phihat, *ch4, *ch2); iscm) {
+                ERR_MSG("Phihat is not a chain map: df != fd at i=" << *iscm);
                 return EXIT_FAILURE;
             }
 
