@@ -79,14 +79,8 @@ int LinkDiagram::stateCoeff(state_t st_before, state_t st_after)
     //   > (state ^ (~signs)).count();
     // Also, we need to concentrate on the bits with index < i with
     //   > st_diff.test(i)==true;
-    bool sign = false;
-    for(std::size_t i = 0; i < m_cross.size() && !st_diff.test(i); ++i) {
-        sign ^=
-            (m_signs.test(i) && st_before.test(i))
-            || (!m_signs.test(i) && !st_before.test(i));
-    }
-
-    return sign ? -1 : 1;
+    auto lowcnt = ((st_before ^ (~m_signs)) & state_t{st_diff.to_ullong() - 1}).count();
+    return (lowcnt % 2 == 0) ? 1 : -1;
 }
 
 // Vertical smoothing; i.e. smoothing along the orientation.

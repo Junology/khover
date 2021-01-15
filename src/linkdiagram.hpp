@@ -113,7 +113,7 @@ public:
     //! Get the number of negative crossings.
     inline
     std::size_t
-    nnegative() const noexcept { return m_cross.size() - npositive(); }
+    nnegative() const noexcept { return ncrosses() - npositive(); }
 
     //! Compute the writhe number
     inline
@@ -204,7 +204,7 @@ public:
     inline
     void
     mirroring() noexcept {
-        m_signs.flip();
+        m_signs ^= low_window<max_crosses>(ncrosses());
     }
 
     //! Make a crossing positive.

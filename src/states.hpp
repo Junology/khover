@@ -142,6 +142,18 @@ bitsIndex(std::bitset<n> bits)
     return result;
 }
 
+//! Get the successor with the same popcount.
+template<std::size_t n>
+inline std::bitset<n>
+succWithPop(std::bitset<n> const& bits)
+    noexcept
+{
+    return bitsWithPop<n>(
+        bits.count(),
+        bitsIndex(bits)+1
+        );
+}
+
 //! Get the predecessor with the same popcount.
 //! \pre bitsIndex(bits) > 0.
 template<std::size_t n>

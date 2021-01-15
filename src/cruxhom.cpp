@@ -160,65 +160,49 @@ khover::crossPhiHat(
         auto urcomp_neg = cube_neg[st_neg].arccomp[diagram.getURArc(crossing)];
         auto dlcomp_neg = cube_neg[st_neg].arccomp[diagram.getDLArc(crossing)];
 
-        // Compute the sign
-        ChainIntegral::coeff_t sign = 1;
-        for(std::size_t c = crossing+1; c < diagram.ncrosses(); ++c) {
-            if((diagram.getSign(c) > 0) == stbit_neg.test(c))
-                sign = -sign;
-        }
+        // Skip the cases where the double point is adjacent to a single component.
+        if (urcomp_neg == dlcomp_neg)
+            continue;
 
         // Compute the coefficients of the matrix.
         auto rk = binom(cube_neg[st_neg].ncomp, enhprop_neg[st_neg].xcnt);
         for(std::size_t e = 0; e < rk; ++e) {
             auto enh = bitsWithPop<max_components>(enhprop_neg[st_neg].xcnt, e);
 
-            // Single component
-            if(urcomp_neg == dlcomp_neg) {
-                if(!enh.test(urcomp_neg)) {
-                    enh.set(urcomp_neg);
-                    homs[cube_pos.dim()-stbit_pos.count()].coeffRef(
-                        enhprop_pos[st_pos].headidx + bitsIndex(enh),
-                        enhprop_neg[st_neg].headidx + e
-                        ) = 0; // sign * 2;
-                }
+            // 1⊗1 -> 1⊗x - x⊗1
+            if(!enh.test(urcomp_neg) && !enh.test(dlcomp_neg)) {
+                // 1*x
+                enh.set(urcomp_neg);
+                homs[cube_pos.dim()-stbit_pos.count()].coeffRef(
+                    enhprop_pos[st_pos].headidx + bitsIndex(enh),
+                    enhprop_neg[st_neg].headidx + e
+                    ) = 1;
+                enh.set(urcomp_neg, false);
+                enh.set(dlcomp_neg);
+                // -x⊗1
+                enh.set(dlcomp_neg);
+                homs[cube_pos.dim()-stbit_pos.count()].coeffRef(
+                    enhprop_pos[st_pos].headidx + bitsIndex(enh),
+                    enhprop_neg[st_neg].headidx + e
+                    ) = -1;
             }
-            // Two components
-            else {
-                // Both '1'
-                if(!enh.test(urcomp_neg) && !enh.test(dlcomp_neg)) {
-                    // -1*x
-                    enh.set(urcomp_neg);
-                    homs[cube_pos.dim()-stbit_pos.count()].coeffRef(
-                        enhprop_pos[st_pos].headidx + bitsIndex(enh),
-                        enhprop_neg[st_neg].headidx + e
-                        ) = -sign;
-                    enh.set(urcomp_neg, false);
-                    // x*1
-                    enh.set(dlcomp_neg);
-                    homs[cube_pos.dim()-stbit_pos.count()].coeffRef(
-                        enhprop_pos[st_pos].headidx + bitsIndex(enh),
-                        enhprop_neg[st_neg].headidx + e
-                        ) = sign;
-                }
-                // '1' on left, 'x' on right
-                else if(!enh.test(urcomp_neg)) {
-                    enh.set(urcomp_neg);
-                    enh.set(dlcomp_neg);
-                    homs[cube_pos.dim()-stbit_pos.count()].coeffRef(
-                        enhprop_pos[st_pos].headidx + bitsIndex(enh),
-                        enhprop_neg[st_neg].headidx + e
-                        ) = sign;
-                }
-                // 'x' on left, '1' on right
-                else if(!enh.test(dlcomp_neg)) {
-                    enh.set(urcomp_neg);
-                    enh.set(dlcomp_neg);
-                    homs[cube_pos.dim()-stbit_pos.count()].coeffRef(
-                        enhprop_pos[st_pos].headidx + bitsIndex(enh),
-                        enhprop_neg[st_neg].headidx + e
-                        ) = -sign;
-                }
+            // x⊗1 -> x⊗x
+            else if(!enh.test(urcomp_neg)) {
+                enh.set(urcomp_neg);
+                homs[cube_pos.dim()-stbit_pos.count()].coeffRef(
+                    enhprop_pos[st_pos].headidx + bitsIndex(enh),
+                    enhprop_neg[st_neg].headidx + e
+                    ) = 1;
             }
+            // 1⊗x -> -x⊗x
+            else if(!enh.test(dlcomp_neg)) {
+                enh.set(dlcomp_neg);
+                homs[cube_pos.dim()-stbit_pos.count()].coeffRef(
+                    enhprop_pos[st_pos].headidx + bitsIndex(enh),
+                    enhprop_neg[st_neg].headidx + e
+                    ) = -1;
+            }
+            // x*x -> 0; omitted.
         }
     }
 

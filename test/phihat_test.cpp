@@ -12,6 +12,25 @@ constexpr std::size_t lengthof(T const(&)[n]) {
     return n;
 }
 
+std::pair<state_t,enhancement_t>
+get_enhstate_from_index(
+    std::size_t idx,
+    int coh_deg, SmoothCube const& cube,
+    std::vector<EnhancementProperty> const& enh_prop
+    )
+{
+    std::size_t cnt = static_cast<std::size_t>(coh_deg - cube.mincohdeg());
+    auto st = bitsWithPop<max_crosses>(cnt, 0);
+    while (idx >= binom(cube[st.to_ulong()].ncomp, enh_prop[st.to_ulong()].xcnt)) {
+        idx -= binom(cube[st.to_ulong()].ncomp, enh_prop[st.to_ulong()].xcnt);
+        st = succWithPop(st);
+    }
+
+    enhancement_t enh = bitsWithPop<max_components>(enh_prop[st.to_ulong()].xcnt, idx);
+
+    return std::make_pair(st, enh);
+}
+
 int test_phihat(LinkDiagram const& diagram, LinkDiagram::crossing_t c)
 {
     auto diag_neg = diagram, diag_pos = diagram;
@@ -73,13 +92,27 @@ int test_phihat(LinkDiagram const& diagram, LinkDiagram::crossing_t c)
 
         // Check if Phihat is a chain map.
         for(int i = std::max(ch_neg->maxdeg(), ch_pos->maxdeg()); i > std::min(ch_neg->mindeg(), ch_pos->mindeg()); --i) {
-            auto comm = ch_pos->getDiff(i) * phihat->morphism(i+1) - phihat->morphism(i) * ch_neg->getDiff(i);
+            auto comm = (ch_pos->getDiff(i) * phihat->morphism(i+1) - phihat->morphism(i) * ch_neg->getDiff(i)).eval();
             if(!comm.isZero()) {
                 ERR_MSG("Phihat does not commute with differentials at (q,i)=(" << q << "," << i << ")");
                 DBG_MSG("Diff of C(+):\n" << ch_pos->getDiff(i));
                 DBG_MSG("Diff of C(-):\n" << ch_neg->getDiff(i));
                 DBG_MSG("Phihat@i+1\n" << phihat->morphism(i+1));
                 DBG_MSG("Phihat@i\n" << phihat->morphism(i));
+                for(int k = 0; k < comm.rows(); ++k) {
+                    for(int l = 0; l < comm.cols(); ++l) {
+                        if (comm.coeff(k,l) != 0) {
+                            DBG_MSG("Difference at (" << k << "," << l << "):");
+                            std::cout << "dom:" << get_enhstate_from_index(
+                                static_cast<std::size_t>(l),
+                                -i-1, cube_neg, *enhprop_neg) << std::endl;
+                            std::cout << "cod:" << get_enhstate_from_index(
+                                static_cast<std::size_t>(k),
+                                -i, cube_pos, *enhprop_pos) << std::endl;
+                        }
+                    }
+                }
+
                 return EXIT_FAILURE;
             }
         }
@@ -132,7 +165,7 @@ int main (int argc, char* argv[])
             if (test_phihat(*(diagrams[i]), c) == EXIT_FAILURE)
                 return EXIT_FAILURE;
 
-            DBG_MSG("Passed");
+            std::cout << "Passed" << std::endl;
         }
     }
 
